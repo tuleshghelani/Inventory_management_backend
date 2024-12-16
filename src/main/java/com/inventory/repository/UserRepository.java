@@ -1,10 +1,10 @@
 package com.inventory.repository;
 
-import com.inventory.entity.User;
+import com.inventory.entity.UserMaster;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByEmail(String email);
+public interface UserRepository extends JpaRepository<UserMaster, Long> {
+    Optional<UserMaster> findByEmail(String email);
     boolean existsByEmail(String email);
 }

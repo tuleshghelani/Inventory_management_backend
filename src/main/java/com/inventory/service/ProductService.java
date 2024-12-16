@@ -1,57 +1,141 @@
-
 package com.inventory.service;
 
+import com.inventory.dto.ApiResponse;
 import com.inventory.dto.ProductDto;
 import com.inventory.entity.Product;
+import com.inventory.exception.ValidationException;
 import com.inventory.repository.ProductRepository;
 import com.inventory.repository.CategoryRepository;
+import com.inventory.dao.ProductDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductDao productDao;
 
     @Transactional
-    public ProductDto create(ProductDto dto) {
-        Product product = new Product();
-        product.setName(dto.getName());
-        product.setCategory(categoryRepository.findById(dto.getCategoryId())
-            .orElseThrow(() -> new RuntimeException("Category not found")));
-        product.setDescription(dto.getDescription());
-        product.setMinimumStock(dto.getMinimumStock());
-        product.setStatus(dto.getStatus());
+    public ApiResponse<?> create(ProductDto dto) {
+        validateProduct(dto);
         
-        product = productRepository.save(product);
-        return mapToDto(product);
-    }
+        try {
+            Optional<Product> productByName = productRepository.findByName(dto.getName().trim());
+            if(!productByName.isEmpty()) {
+                throw new ValidationException("Product name already exists");
+            }
 
-    @Transactional
-    public ProductDto update(Long id, ProductDto dto) {
-        Product product = productRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Product not found"));
+            Product product = new Product();
+            product.setName(dto.getName().trim());
+            product.setCategory(categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ValidationException("Category not found")));
+            product.setDescription(dto.getDescription());
+            product.setMinimumStock(dto.getMinimumStock());
+            product.setStatus(dto.getStatus().trim());
             
-        product.setName(dto.getName());
-        product.setCategory(categoryRepository.findById(dto.getCategoryId())
-            .orElseThrow(() -> new RuntimeException("Category not found")));
-        product.setDescription(dto.getDescription());
-        product.setMinimumStock(dto.getMinimumStock());
-        product.setStatus(dto.getStatus());
-        
-        product = productRepository.save(product);
-        return mapToDto(product);
+            productRepository.save(product);
+            return ApiResponse.success("Product created successfully");
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to create product");
+        }
     }
 
-    public List<ProductDto> findAll() {
-        return productRepository.findByStatus("A").stream()
-            .map(this::mapToDto)
-            .collect(Collectors.toList());
+    @Transactional
+    public ApiResponse<?> update(Long id, ProductDto dto) {
+        validateProduct(dto);
+        
+        try {
+            Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Product not found"));
+
+            Optional<Product> productByName = productRepository.findByNameAndIdNotIn(dto.getName().trim(), Collections.singletonList(product.getId()));
+            if(!productByName.isEmpty()) {
+                throw new ValidationException("Product name already exists");
+            }
+            
+            product.setName(dto.getName().trim());
+            product.setCategory(categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ValidationException("Category not found")));
+            product.setDescription(dto.getDescription());
+            product.setMinimumStock(dto.getMinimumStock());
+            product.setStatus(dto.getStatus().trim());
+            
+            productRepository.save(product);
+            return ApiResponse.success("Product updated successfully");
+        } catch (ValidationException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to update product");
+        }
+    }
+
+    public ApiResponse<List<Map<String, Object>>> getProducts(ProductDto productDto) {
+        try {
+            List<Map<String, Object>> products = productDao.getProducts(productDto);
+            return ApiResponse.success("Products retrieved successfully", products);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to retrieve products");
+        }
+    }
+    
+    public ApiResponse<Map<String, Object>> searchProducts(ProductDto productDto) {
+        try {
+            Map<String, Object> result = productDao.searchProducts(productDto);
+            return ApiResponse.success("Products retrieved successfully", result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to retrieve products");
+        }
+    }
+
+    @Transactional
+    public ApiResponse<?> delete(Long id) {
+        try {
+            Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Product not found"));
+            
+            productRepository.delete(product);
+            return ApiResponse.success("Product deleted successfully");
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to delete product");
+        }
+    }
+
+    private void validateProduct(ProductDto dto) {
+        if (!StringUtils.hasText(dto.getName())) {
+            throw new ValidationException("Product name is required");
+        }
+        if (dto.getCategoryId() == null) {
+            throw new ValidationException("Category is required");
+        }
+        if (!StringUtils.hasText(dto.getStatus())) {
+            throw new ValidationException("Product status is required");
+        }
+        if (dto.getStatus().trim().length() != 1 || !dto.getStatus().trim().matches("[AI]")) {
+            throw new ValidationException("Product status must be either 'A' (Active) or 'I' (Inactive)");
+        }
+        if (dto.getMinimumStock() == null || dto.getMinimumStock().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ValidationException("Minimum stock must be a non-negative number");
+        }
     }
 
     private ProductDto mapToDto(Product product) {

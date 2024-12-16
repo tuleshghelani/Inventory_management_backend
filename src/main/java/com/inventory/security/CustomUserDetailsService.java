@@ -1,7 +1,7 @@
 
 package com.inventory.security;
 
-import com.inventory.entity.User;
+import com.inventory.entity.UserMaster;
 import com.inventory.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,17 +19,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        UserMaster userMaster = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        return UserPrincipal.create(user);
+        return UserPrincipal.create(userMaster);
     }
 
     @Transactional(readOnly = true)
     public UserDetails loadUserById(Long id) {
-        User user = userRepository.findById(id)
+        UserMaster userMaster = userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + id));
 
-        return UserPrincipal.create(user);
+        return UserPrincipal.create(userMaster);
     }
 }

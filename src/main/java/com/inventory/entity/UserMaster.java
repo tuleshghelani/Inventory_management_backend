@@ -6,16 +6,18 @@ import java.time.OffsetDateTime;
 
 @Data
 @Entity
-@Table(name = "\"user\"")
-public class User {
+@Table(name = "\"user_master\"", uniqueConstraints={
+        @UniqueConstraint( name = "uk_user_master_email",  columnNames ={"email"})
+})
+public class UserMaster {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
     
     @Column(nullable = false, length = 256)
@@ -42,6 +44,6 @@ public class User {
     private OffsetDateTime lockTime;
     
     @ManyToOne
-    @JoinColumn(name = "client_id")
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_user_master_client_id_client_id"))
     private Client client;
 }

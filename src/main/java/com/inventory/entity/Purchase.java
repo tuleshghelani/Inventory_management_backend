@@ -14,7 +14,7 @@ public class Purchase {
     private Long id;
     
     @ManyToOne
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id", nullable = false, referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_purchase_product_id_product_id"))
     private Product product;
     
     @Column(nullable = false)
@@ -29,15 +29,15 @@ public class Purchase {
     @Column(nullable = false)
     private OffsetDateTime purchaseDate;
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(nullable = false)
+    @Column(nullable = false, length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
     
     @ManyToOne
-    @JoinColumn(name = "created_by")
-    private User createdBy;
+    @JoinColumn(name = "created_by", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_purchase_created_by_user_master_id"))
+    private UserMaster createdBy;
     
     private String invoiceNumber;
     

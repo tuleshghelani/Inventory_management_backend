@@ -3,33 +3,49 @@ package com.inventory.service;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.CategoryDto;
 import com.inventory.entity.Category;
+import com.inventory.entity.Product;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.CategoryRepository;
+import com.inventory.repository.ProductRepository;
+import com.inventory.dao.CategoryDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final CategoryDao categoryDao;
 
     @Transactional
     public ApiResponse<?> create(CategoryDto dto) {
         validateCategory(dto);
         
         try {
+            Optional<Category> categoryByName = categoryRepository.findByName(dto.getName().trim());
+            if(!categoryByName.isEmpty()) {
+                throw new ValidationException("Category name already exist");
+            }
             Category category = new Category();
             category.setName(dto.getName().trim());
             category.setStatus(dto.getStatus().trim());
             
             categoryRepository.save(category);
             return ApiResponse.success("Category created successfully");
+        } catch (ValidationException e) {
+            e.printStackTrace();
+            throw new ValidationException(e.getMessage());
         } catch (Exception e) {
+            e.printStackTrace();
             throw new ValidationException("Failed to create category");
         }
     }
@@ -41,6 +57,11 @@ public class CategoryService {
         try {
             Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Category not found"));
+
+            Optional<Category> categoryByName = categoryRepository.findByNameAndIdNotIn(dto.getName().trim(), Collections.singletonList(category.getId()));
+            if(!categoryByName.isEmpty()) {
+                throw new ValidationException("Category name already exist");
+            }
                 
             category.setName(dto.getName().trim());
             category.setStatus(dto.getStatus().trim());
@@ -54,13 +75,43 @@ public class CategoryService {
         }
     }
 
-    public ApiResponse<List<CategoryDto>> findAll() {
+    @Transactional
+    public ApiResponse<?> delete(Long id) {
         try {
-            List<CategoryDto> categories = categoryRepository.findByStatus("A").stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+            Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Category not found"));
+
+            List<Product> existingProducts = productRepository.findByCategory(category);
+            if (!existingProducts.isEmpty()) {
+                throw new ValidationException("Cannot delete category. There are products associated with this category");
+            }
+
+            categoryRepository.delete(category);
+            return ApiResponse.success("Category deleted successfully");
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to delete category");
+        }
+    }
+
+    public ApiResponse<List<Map<String, Object>>> getCategories(CategoryDto categoryDto) {
+        try {
+            List<Map<String, Object>> categories = categoryDao.getCategories(categoryDto);
             return ApiResponse.success("Categories retrieved successfully", categories);
         } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to retrieve categories");
+        }
+    }
+
+    public ApiResponse<Map<String, Object>> searchCategories(CategoryDto categoryDto) {
+        try {
+            Map<String, Object> result = categoryDao.searchCategories(categoryDto);
+            return ApiResponse.success("Categories retrieved successfully", result);
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new ValidationException("Failed to retrieve categories");
         }
     }

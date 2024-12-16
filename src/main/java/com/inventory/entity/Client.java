@@ -26,9 +26,9 @@ public class Client {
     @Column(nullable = false, length = 2)
     private String status = "A";
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 }

@@ -14,7 +14,7 @@ public class DailyProfit {
     private Long id;
     
     @ManyToOne
-    @JoinColumn(name = "sale_id", nullable = false)
+    @JoinColumn(name = "sale_id", nullable = false, referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_daily_profit_sale_id_sale_id"))
     private Sale sale;
     
     @Column(nullable = false, precision = 10, scale = 2)
@@ -35,9 +35,9 @@ public class DailyProfit {
     @Column(nullable = false)
     private OffsetDateTime profitDate;
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(nullable = false)
+    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 }

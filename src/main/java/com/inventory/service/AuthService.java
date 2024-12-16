@@ -3,7 +3,7 @@ package com.inventory.service;
 
 import com.inventory.dto.LoginRequest;
 import com.inventory.dto.RegisterRequest;
-import com.inventory.entity.User;
+import com.inventory.entity.UserMaster;
 import com.inventory.repository.UserRepository;
 import com.inventory.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -23,18 +23,18 @@ public class AuthService {
     private final JwtTokenProvider tokenProvider;
 
     @Transactional
-    public User register(RegisterRequest request) {
+    public UserMaster register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
+        UserMaster userMaster = new UserMaster();
+        userMaster.setEmail(request.getEmail());
+        userMaster.setPassword(passwordEncoder.encode(request.getPassword()));
+        userMaster.setFirstName(request.getFirstName());
+        userMaster.setLastName(request.getLastName());
         
-        return userRepository.save(user);
+        return userRepository.save(userMaster);
     }
 
     public String login(LoginRequest request) {

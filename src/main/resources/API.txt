@@ -40,7 +40,7 @@ Response:
 {
     "status": "success",
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
+    "userMaster": {
         "id": 1,
         "email": "john@example.com",
         "firstName": "John",
@@ -269,8 +269,8 @@ INTERNAL_ERROR: Server internal error
 Here's a summary of the endpoints:
 
 Authentication:
-POST /api/auth/register - Register new user
-POST /api/auth/login - Login user
+POST /api/auth/register - Register new userMaster
+POST /api/auth/login - Login userMaster
 Categories:
 POST /api/categories - Create category
 PUT /api/categories/{id} - Update category

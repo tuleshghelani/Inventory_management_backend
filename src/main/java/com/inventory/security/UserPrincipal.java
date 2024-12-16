@@ -1,7 +1,7 @@
 
 package com.inventory.security;
 
-import com.inventory.entity.User;
+import com.inventory.entity.UserMaster;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,11 +21,11 @@ public class UserPrincipal implements UserDetails {
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
 
-    public static UserPrincipal create(User user) {
+    public static UserPrincipal create(UserMaster userMaster) {
         return UserPrincipal.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .password(user.getPassword())
+                .id(userMaster.getId())
+                .email(userMaster.getEmail())
+                .password(userMaster.getPassword())
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
                 .build();
     }

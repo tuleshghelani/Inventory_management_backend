@@ -1,4 +1,3 @@
-
 package com.inventory.controller;
 
 import com.inventory.dto.CategoryDto;
@@ -23,8 +22,18 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.update(id, request));
     }
 
-    @PostMapping("/getAllCategory")
-    public ResponseEntity<?> findAll() {
-        return ResponseEntity.ok(categoryService.findAll());
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.delete(id));
+    }
+
+    @PostMapping("/getCategories")
+    public ResponseEntity<?> getCategories(@RequestBody CategoryDto categoryDto) {
+        return ResponseEntity.ok(categoryService.getCategories(categoryDto));
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<?> searchCategories(@RequestBody CategoryDto categoryDto) {
+        return ResponseEntity.ok(categoryService.searchCategories(categoryDto));
     }
 }
