@@ -125,7 +125,7 @@ public class CategoryDao {
 
         List<Object[]> results = query.getResultList();
 
-        return transformResults(results, totalRecords);
+        return transformResults(results, totalRecords, categoryDto);
     }
 
     private void appendSearchConditions(StringBuilder sql, Map<String, Object> params, CategoryDto categoryDto) {
@@ -148,7 +148,7 @@ public class CategoryDao {
         query.setParameter("offset", categoryDto.getPage() * categoryDto.getSize());
     }
 
-    private Map<String, Object> transformResults(List<Object[]> results, long totalRecords) {
+    private Map<String, Object> transformResults(List<Object[]> results, long totalRecords, CategoryDto categoryDto) {
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> categories = new ArrayList<>();
 
@@ -167,7 +167,10 @@ public class CategoryDao {
 
         response.put("content", categories);
         response.put("totalElements", totalRecords);
-        int pageSize = categories.isEmpty() ? 1 : categories.size();
+        int pageSize =  categoryDto.getSize();
+        System.out.println("categories : " + categories);
+        System.out.println("totalRecords : " + totalRecords);
+        System.out.println("pageSize : " + pageSize);
         response.put("totalPages", (int) Math.ceil((double) totalRecords / pageSize));
 
         return response;

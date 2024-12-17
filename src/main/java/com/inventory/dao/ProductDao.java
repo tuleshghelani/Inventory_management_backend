@@ -130,7 +130,7 @@ public class ProductDao {
 
         List<Object[]> results = query.getResultList();
 
-        return transformResults(results, totalRecords);
+        return transformResults(results, totalRecords, productDto);
     }
 
     private void appendSearchConditions(StringBuilder sql, Map<String, Object> params, ProductDto productDto) {
@@ -158,7 +158,7 @@ public class ProductDao {
         query.setParameter("offset", productDto.getPage() * productDto.getSize());
     }
 
-    private Map<String, Object> transformResults(List<Object[]> results, long totalRecords) {
+    private Map<String, Object> transformResults(List<Object[]> results, long totalRecords, ProductDto productDto) {
         Map<String, Object> response = new HashMap<>();
         List<Map<String, Object>> products = new ArrayList<>();
 
@@ -180,7 +180,7 @@ public class ProductDao {
 
         response.put("content", products);
         response.put("totalElements", totalRecords);
-        int pageSize = products.isEmpty() ? 1 : products.size();
+        int pageSize =  productDto.getSize();
         response.put("totalPages", (int) Math.ceil((double) totalRecords / pageSize));
 
         return response;

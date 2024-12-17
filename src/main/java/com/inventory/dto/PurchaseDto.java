@@ -2,6 +2,8 @@ package com.inventory.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.inventory.config.CustomDateDeserializer;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,8 +22,13 @@ public class PurchaseDto {
     private BigDecimal unitPrice;
     private BigDecimal totalAmount;
 
-    @JsonFormat(pattern = "dd-MM-yyyy hh:mm:ss")
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime purchaseDate;
     private String invoiceNumber;
     private BigDecimal otherExpenses;
+    private Integer currentPage;
+    private Integer perPageRecord;
+    private String search;
+    private String status;
 }

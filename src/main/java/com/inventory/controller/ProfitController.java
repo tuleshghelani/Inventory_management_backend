@@ -12,6 +12,7 @@ import java.time.ZoneOffset;
 
 @RestController
 @RequestMapping("/api/profits")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class ProfitController {
     private final ProfitDao profitDao;

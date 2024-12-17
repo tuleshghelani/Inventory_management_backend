@@ -1,12 +1,19 @@
 package com.inventory.service;
 
+import com.inventory.dao.PurchaseDao;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.PurchaseDto;
 import com.inventory.entity.Purchase;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.PurchaseRepository;
 import com.inventory.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -15,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -23,6 +31,8 @@ import java.util.stream.Collectors;
 public class PurchaseService {
     private final PurchaseRepository purchaseRepository;
     private final ProductRepository productRepository;
+    private final UtilityService utilityService;
+    private final PurchaseDao purchaseDao;
 
     @Transactional
     public ApiResponse<?> create(PurchaseDto dto) {
@@ -42,19 +52,28 @@ public class PurchaseService {
             purchase.setQuantity(dto.getQuantity());
             purchase.setUnitPrice(dto.getUnitPrice());
             purchase.setTotalAmount(calculateTotalAmount(dto.getUnitPrice(), dto.getQuantity(), dto.getOtherExpenses()));
-            purchase.setPurchaseDate(dto.getPurchaseDate() != null ? dto.getPurchaseDate() : OffsetDateTime.now());
+            
+            // Add specific date handling with detailed error message
+            try {
+                purchase.setPurchaseDate(dto.getPurchaseDate() != null ? dto.getPurchaseDate() : OffsetDateTime.now());
+            } catch (Exception dateEx) {
+                throw new ValidationException("Invalid date format. Expected format: dd-MM-yyyy HH:mm:ss. Error: " + dateEx.getMessage());
+            }
+            
             purchase.setInvoiceNumber(dto.getInvoiceNumber().trim());
             purchase.setOtherExpenses(dto.getOtherExpenses());
             purchase.setRemainingQuantity(dto.getQuantity());
+            UserMaster currentLoggedInUser = utilityService.getCurrentLoggedInUser();
+            purchase.setCreatedBy(currentLoggedInUser);
             
             purchase = purchaseRepository.save(purchase);
             return ApiResponse.success("Purchase created successfully", mapToDto(purchase));
         } catch (ValidationException e) {
-            e.printStackTrace(); 
-            throw e;
+            e.printStackTrace();
+            return ApiResponse.error(e.getMessage()); 
         } catch (Exception e) {
-            e.printStackTrace(); 
-            throw new ValidationException("Failed to create purchase: " + e.getMessage());
+            e.printStackTrace();
+            return ApiResponse.error("Failed to create purchase. Error: " + e.getMessage());
         }
     }
 
@@ -107,5 +126,14 @@ public class PurchaseService {
         dto.setInvoiceNumber(purchase.getInvoiceNumber());
         dto.setOtherExpenses(purchase.getOtherExpenses());
         return dto;
+    }
+
+    public Page<Map<String, Object>> searchPurchases(PurchaseDto dto) {
+        try {
+            return purchaseDao.searchPurchases(dto);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to search purchases");
+        }
     }
 }
