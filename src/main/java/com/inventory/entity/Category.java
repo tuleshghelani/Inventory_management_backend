@@ -22,6 +22,9 @@ public class Category {
     
     @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+    @Column()
+    private Integer remainingQuantity;
     
     @ManyToOne
     @JoinColumn(name = "created_by", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_category_created_by_user_master_id"))

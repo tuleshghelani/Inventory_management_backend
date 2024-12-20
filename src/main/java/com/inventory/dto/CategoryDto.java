@@ -14,6 +14,7 @@ public class CategoryDto {
     private String name;
     private String search;
     private String status;
+    private Integer remainingQuantity;
     private Integer page = 0;
     private Integer size = 10;
     private String sortBy = "id";

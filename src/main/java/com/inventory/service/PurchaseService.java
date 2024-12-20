@@ -33,6 +33,7 @@ public class PurchaseService {
     private final ProductRepository productRepository;
     private final UtilityService utilityService;
     private final PurchaseDao purchaseDao;
+    private final QuantityTrackingService quantityTrackingService;
 
     @Transactional
     public ApiResponse<?> create(PurchaseDto dto) {
@@ -65,8 +66,9 @@ public class PurchaseService {
             purchase.setRemainingQuantity(dto.getQuantity());
             UserMaster currentLoggedInUser = utilityService.getCurrentLoggedInUser();
             purchase.setCreatedBy(currentLoggedInUser);
-            
+                
             purchase = purchaseRepository.save(purchase);
+            quantityTrackingService.updateQuantitiesAfterPurchase(purchase);
             return ApiResponse.success("Purchase created successfully", mapToDto(purchase));
         } catch (ValidationException e) {
             e.printStackTrace();

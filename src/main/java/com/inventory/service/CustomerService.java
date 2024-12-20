@@ -1,0 +1,139 @@
+package com.inventory.service;
+
+import com.inventory.dto.ApiResponse;
+import com.inventory.dto.CustomerDto;
+import com.inventory.entity.Customer;
+import com.inventory.exception.ValidationException;
+import com.inventory.repository.CustomerRepository;
+import com.inventory.dao.CustomerDao;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.time.OffsetDateTime;
+import java.util.Map;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
+public class CustomerService {
+    private final CustomerRepository customerRepository;
+    private final CustomerDao customerDao;
+    private final UtilityService utilityService;
+
+    @Transactional
+    public ApiResponse<?> create(CustomerDto dto) {
+        try {
+            validateCustomer(dto);
+            
+//            Optional<Customer> existingCustomer = customerRepository.findByMobile(dto.getMobile().trim());
+//            if (existingCustomer.isPresent()) {
+//                throw new ValidationException("Customer with this mobile number already exists");
+//            }
+
+            Customer customer = new Customer();
+            mapDtoToEntity(dto, customer);
+            customer.setCreatedBy(utilityService.getCurrentLoggedInUser());
+            
+            customer = customerRepository.save(customer);
+            return ApiResponse.success("Customer created successfully", mapEntityToDto(customer));
+        } catch (ValidationException e) {
+            e.getMessage();
+            throw e;
+        } catch (Exception e) {
+            e.getMessage();
+            throw new ValidationException("Failed to create customer: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public ApiResponse<?> update(Long id, CustomerDto dto) {
+        try {
+            validateCustomer(dto);
+            
+            Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Customer not found"));
+
+//            Optional<Customer> existingCustomer = customerRepository.findByMobileAndIdNot(
+//                dto.getMobile().trim(), customer.getId());
+//            if (existingCustomer.isPresent()) {
+//                throw new ValidationException("Customer with this mobile number already exists");
+//            }
+
+            mapDtoToEntity(dto, customer);
+            customer.setUpdatedAt(OffsetDateTime.now());
+            
+            customer = customerRepository.save(customer);
+            return ApiResponse.success("Customer updated successfully", mapEntityToDto(customer));
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to update customer: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<?> delete(Long id) {
+        try {
+            Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Customer not found"));
+            
+            customerRepository.delete(customer);
+            return ApiResponse.success("Customer deleted successfully");
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to delete customer: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<Map<String, Object>> searchCustomers(CustomerDto dto) {
+        try {
+            Map<String, Object> result = customerDao.searchCustomers(dto);
+            return ApiResponse.success("Customers retrieved successfully", result);
+        } catch (Exception e) {
+            throw new ValidationException("Failed to search customers: " + e.getMessage());
+        }
+    }
+
+    private void validateCustomer(CustomerDto dto) {
+        if (!StringUtils.hasText(dto.getName())) {
+            throw new ValidationException("Name is required");
+        }
+        
+//        if (!StringUtils.hasText(dto.getMobile())) {
+//            throw new ValidationException("Mobile number is required");
+//        }
+//
+//        if (dto.getMobile().length() < 10 || dto.getMobile().length() > 15) {
+//            throw new ValidationException("Invalid mobile number");
+//        }
+    }
+
+    private void mapDtoToEntity(CustomerDto dto, Customer customer) {
+        customer.setName(dto.getName().trim());
+        customer.setGst(dto.getGst() != null ? dto.getGst().trim() : null);
+        customer.setAddress(dto.getAddress());
+        customer.setMobile(dto.getMobile().trim());
+        customer.setRemainingPaymentAmount(dto.getRemainingPaymentAmount());
+        customer.setNextActionDate(dto.getNextActionDate());
+        customer.setEmail(dto.getEmail());
+        customer.setRemarks(dto.getRemarks());
+        customer.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
+    }
+
+    private CustomerDto mapEntityToDto(Customer customer) {
+        CustomerDto dto = new CustomerDto();
+        dto.setId(customer.getId());
+        dto.setName(customer.getName());
+        dto.setGst(customer.getGst());
+        dto.setAddress(customer.getAddress());
+        dto.setMobile(customer.getMobile());
+        dto.setRemainingPaymentAmount(customer.getRemainingPaymentAmount());
+        dto.setNextActionDate(customer.getNextActionDate());
+        dto.setEmail(customer.getEmail());
+        dto.setRemarks(customer.getRemarks());
+        dto.setStatus(customer.getStatus());
+        return dto;
+    }
+} 

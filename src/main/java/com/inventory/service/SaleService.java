@@ -27,6 +27,7 @@ public class SaleService {
     private final PurchaseRepository purchaseRepository;
     private final DailyProfitRepository dailyProfitRepository;
     private final SaleDao saleDao;
+    private final QuantityTrackingService quantityTrackingService;
 
     @Transactional
     public ApiResponse<?> create(SaleDto dto) {
@@ -53,8 +54,9 @@ public class SaleService {
             sale.setSaleDate(dto.getSaleDate());
             sale.setInvoiceNumber(dto.getInvoiceNumber().trim());
             sale.setOtherExpenses(dto.getOtherExpenses());
-            
+
             sale = saleRepository.save(sale);
+            quantityTrackingService.updateQuantitiesAfterSale(sale);
             
             // Update remaining quantity
             purchase.setRemainingQuantity(purchase.getRemainingQuantity() - dto.getQuantity());
