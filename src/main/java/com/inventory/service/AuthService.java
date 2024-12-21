@@ -1,4 +1,3 @@
-
 package com.inventory.service;
 
 import com.inventory.dto.LoginRequest;
@@ -42,6 +41,14 @@ public class AuthService {
             new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
         
-        return tokenProvider.generateToken(authentication);
+        String token = tokenProvider.generateToken(authentication);
+        
+        // Save token to database
+        UserMaster user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setJwtToken(token);
+        userRepository.save(user);
+        
+        return token;
     }
 }

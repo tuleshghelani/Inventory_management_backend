@@ -15,16 +15,20 @@ import org.springframework.http.HttpStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inventory.dto.ApiResponse;
 import java.io.IOException;
+import com.inventory.entity.UserMaster;
+import com.inventory.repository.UserRepository;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private JwtTokenProvider tokenProvider;
     private CustomUserDetailsService customUserDetailsService;
     private ObjectMapper objectMapper = new ObjectMapper();
+    private UserRepository userRepository;
     
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, CustomUserDetailsService customUserDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, CustomUserDetailsService customUserDetailsService, UserRepository userRepository) {
         this.tokenProvider = tokenProvider;
         this.customUserDetailsService = customUserDetailsService;
+        this.userRepository = userRepository;
     }
     
     @Override
@@ -35,6 +39,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 Long userId = tokenProvider.getUserIdFromJWT(jwt);
+                
+                // Verify token matches database
+                UserMaster user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ValidationException("User not found", HttpStatus.UNAUTHORIZED));
+                    
+                if (!jwt.equals(user.getJwtToken())) {
+                    throw new ValidationException("Invalid token", HttpStatus.UNAUTHORIZED);
+                }
+                
                 UserDetails userDetails = customUserDetailsService.loadUserById(userId);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());

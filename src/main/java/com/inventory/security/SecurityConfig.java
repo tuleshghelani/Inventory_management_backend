@@ -1,6 +1,6 @@
-
 package com.inventory.security;
 
+import com.inventory.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +21,7 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
     private final JwtTokenProvider tokenProvider;
+    private final UserRepository userRepository;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -32,7 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider, customUserDetailsService),
+                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider, customUserDetailsService, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
