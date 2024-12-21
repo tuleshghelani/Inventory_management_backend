@@ -3,11 +3,11 @@ package com.inventory.service;
 import com.inventory.dao.PurchaseDao;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.PurchaseDto;
-import com.inventory.entity.Purchase;
-import com.inventory.entity.UserMaster;
+import com.inventory.entity.*;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.PurchaseRepository;
 import com.inventory.repository.ProductRepository;
+import com.inventory.repository.SaleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,6 +34,7 @@ public class PurchaseService {
     private final UtilityService utilityService;
     private final PurchaseDao purchaseDao;
     private final QuantityTrackingService quantityTrackingService;
+    private final SaleRepository saleRepository;
 
     @Transactional
     public ApiResponse<?> create(PurchaseDto dto) {
@@ -46,15 +47,19 @@ public class PurchaseService {
                 throw new ValidationException("Invoice number already exists");
             }
 
+            // Get the product first
+            Product product = productRepository.findById(dto.getProductId())
+                .orElseThrow(() -> new ValidationException("Product not found"));
+
             Purchase purchase = new Purchase();
-            purchase.setProduct(productRepository.findById(dto.getProductId())
-                .orElseThrow(() -> new ValidationException("Product not found")));
+            purchase.setProduct(product);
+            // Set the category from the product
+            purchase.setCategory(product.getCategory());
             
             purchase.setQuantity(dto.getQuantity());
             purchase.setUnitPrice(dto.getUnitPrice());
             purchase.setTotalAmount(calculateTotalAmount(dto.getUnitPrice(), dto.getQuantity(), dto.getOtherExpenses()));
             
-            // Add specific date handling with detailed error message
             try {
                 purchase.setPurchaseDate(dto.getPurchaseDate() != null ? dto.getPurchaseDate() : OffsetDateTime.now());
             } catch (Exception dateEx) {
@@ -137,5 +142,37 @@ public class PurchaseService {
             e.printStackTrace();
             throw new ValidationException("Failed to search purchases");
         }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+        public ApiResponse<?> delete(Long id) {
+            try {
+                Purchase purchase = purchaseRepository.findById(id)
+                    .orElseThrow(() -> new ValidationException("Purchase not found"));
+
+                // Check if there are any associated sales
+                List<Sale> existingSales = saleRepository.findByPurchaseId(purchase.getId());
+                if (!existingSales.isEmpty()) {
+                    throw new ValidationException("Cannot delete purchase. Please remove associated sales first.");
+                }
+
+                // Get the product before deleting the purchase
+                Product product = purchase.getProduct();
+                Category category = product.getCategory();
+
+                // Delete the purchase
+                purchaseRepository.delete(purchase);
+
+                // Update quantities
+                quantityTrackingService.updateQuantitiesAfterPurchase(purchase);
+
+                return ApiResponse.success("Purchase deleted successfully");
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException("Failed to delete purchase: " + e.getMessage());
+        }
+
     }
 }

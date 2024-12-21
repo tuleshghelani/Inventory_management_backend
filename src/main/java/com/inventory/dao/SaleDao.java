@@ -53,8 +53,8 @@ public class SaleDao {
                 c.name as category_name
             FROM sale s
             JOIN purchase p ON s.purchase_id = p.id
-            JOIN product pr ON p.product_id = pr.id
-            JOIN category c ON pr.category_id = c.id
+            left JOIN product pr ON p.product_id = pr.id
+            left JOIN category c ON p.category_id = c.id
             WHERE 1=1
         """);
 

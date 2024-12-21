@@ -27,4 +27,9 @@ public class PurchaseController {
     public ResponseEntity<?> searchPurchases(@RequestBody PurchaseDto request) {
         return ResponseEntity.ok(purchaseService.searchPurchases(request));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        return ResponseEntity.ok(purchaseService.delete(id));
+    }
 }

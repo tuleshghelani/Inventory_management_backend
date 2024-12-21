@@ -16,6 +16,10 @@ public class Purchase {
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false, referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_purchase_product_id_product_id"))
     private Product product;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_purchase_category_id_category_id"))
+    private Category category;
     
     @Column(nullable = false)
     private Integer quantity;

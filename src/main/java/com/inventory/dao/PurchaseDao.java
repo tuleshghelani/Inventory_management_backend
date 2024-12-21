@@ -38,8 +38,8 @@ public class PurchaseDao {
 
             nativeQuery.append("""
                 FROM purchase p 
-                INNER JOIN product pr ON p.product_id = pr.id
-                INNER JOIN category c ON pr.category_id = c.id 
+                LEFT JOIN product pr ON p.product_id = pr.id
+                LEFT JOIN category c ON p.category_id = c.id 
                 WHERE 1=1
                 """);
 

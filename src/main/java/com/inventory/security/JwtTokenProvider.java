@@ -5,6 +5,8 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import com.inventory.exception.ValidationException;
+import org.springframework.http.HttpStatus;
 import java.util.Date;
 
 @Component
@@ -47,8 +49,10 @@ public class JwtTokenProvider {
                 .build()
                 .parseClaimsJws(authToken);
             return true;
+        } catch (ExpiredJwtException ex) {
+            throw new ValidationException("Invalid JWT token", HttpStatus.UNAUTHORIZED);
         } catch (JwtException ex) {
-            return false;
+            throw new ValidationException("Invalid JWT token", HttpStatus.UNAUTHORIZED);
         }
     }
 }

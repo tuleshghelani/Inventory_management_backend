@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 public class PurchaseDto {
     private Long id;
     private Long productId;
+    private Long categoryId;
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalAmount;
