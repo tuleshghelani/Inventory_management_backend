@@ -146,6 +146,7 @@ public class ProductService {
         dto.setDescription(product.getDescription());
         dto.setMinimumStock(product.getMinimumStock());
         dto.setStatus(product.getStatus());
+        dto.setRemainingQuantity(product.getRemainingQuantity());
         return dto;
     }
 }

@@ -29,7 +29,7 @@ public class SaleService {
     private final SaleDao saleDao;
     private final QuantityTrackingService quantityTrackingService;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<?> create(SaleDto dto) {
         try {
             validateSale(dto);
@@ -56,11 +56,11 @@ public class SaleService {
             sale.setOtherExpenses(dto.getOtherExpenses());
 
             sale = saleRepository.save(sale);
-            quantityTrackingService.updateQuantitiesAfterSale(sale);
-            
             // Update remaining quantity
             purchase.setRemainingQuantity(purchase.getRemainingQuantity() - dto.getQuantity());
             purchaseRepository.save(purchase);
+            quantityTrackingService.updateQuantitiesAfterSale(sale);
+
             
             // Calculate and save profit
             calculateAndSaveProfit(sale);

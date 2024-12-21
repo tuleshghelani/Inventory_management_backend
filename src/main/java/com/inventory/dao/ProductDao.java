@@ -109,8 +109,7 @@ public class ProductDao {
                 p.description,
                 p.minimum_stock,
                 p.status,
-                p.created_at,
-                p.updated_at,
+                p.remaining_quantity,
                 c.id as category_id,
                 c.name as category_name
             FROM product p
@@ -170,10 +169,9 @@ public class ProductDao {
                 product.put("description", row[2]);
                 product.put("minimumStock", row[3]);
                 product.put("status", row[4]);
-                product.put("createdAt", row[5]);
-                product.put("updatedAt", row[6]);
-                product.put("categoryId", row[7]);
-                product.put("categoryName", row[8]);
+                product.put("remainingQuantity", row[5]);
+                product.put("categoryId", row[6]);
+                product.put("categoryName", row[7]);
                 products.add(product);
             }
         }

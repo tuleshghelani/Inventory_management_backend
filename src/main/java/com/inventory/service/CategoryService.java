@@ -133,6 +133,7 @@ public class CategoryService {
         dto.setId(category.getId());
         dto.setName(category.getName());
         dto.setStatus(category.getStatus());
+        dto.setRemainingQuantity(category.getRemainingQuantity());
         return dto;
     }
 }

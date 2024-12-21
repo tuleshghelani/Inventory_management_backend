@@ -105,9 +105,7 @@ public class CategoryDao {
                 c.id,
                 c.name,
                 c.status,
-                c.created_at,
-                c.updated_at,
-                COALESCE(TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))), '') as created_by
+                c.remaining_quantity
             FROM category c
             LEFT JOIN user_master u ON c.created_by = u.id
             WHERE 1=1
@@ -158,9 +156,7 @@ public class CategoryDao {
                 category.put("id", row[0]);
                 category.put("name", row[1]);
                 category.put("status", row[2]);
-                category.put("createdAt", row[3]);
-                category.put("updatedAt", row[4]);
-                category.put("createdBy", row[5]);
+                category.put("remainingQuantity", row[3]);
                 categories.add(category);
             }
         }
@@ -168,9 +164,6 @@ public class CategoryDao {
         response.put("content", categories);
         response.put("totalElements", totalRecords);
         int pageSize =  categoryDto.getSize();
-        System.out.println("categories : " + categories);
-        System.out.println("totalRecords : " + totalRecords);
-        System.out.println("pageSize : " + pageSize);
         response.put("totalPages", (int) Math.ceil((double) totalRecords / pageSize));
 
         return response;
