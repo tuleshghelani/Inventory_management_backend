@@ -7,45 +7,51 @@ import java.math.BigDecimal;
 
 @Data
 @Entity
-@Table(name = "customer")
+@Table(name = "customer", indexes = {
+    @Index(name = "idx_customer_name", columnList = "name"),
+    @Index(name = "idx_customer_mobile", columnList = "mobile"),
+    @Index(name = "idx_customer_email", columnList = "email"),
+    @Index(name = "idx_customer_remaining_payment_amount", columnList = "remaining_payment_amount"),
+})
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, length = 256)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
     
-    @Column(length = 15)
+    @Column(name = "gst", length = 15)
     private String gst;
     
-    @Column(length = 512)
+    @Column(name = "address", length = 512)
     private String address;
     
-    @Column(length = 15)
+    @Column(name = "mobile", length = 15)
     private String mobile;
     
-    @Column(precision = 10, scale = 2)
+    @Column(name = "remaining_payment_amount", precision = 10, scale = 2)
     private BigDecimal remainingPaymentAmount;
     
+    @Column(name = "next_action_date")
     private OffsetDateTime nextActionDate;
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
     
     @ManyToOne
     @JoinColumn(name = "created_by", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_customer_created_by_user_master_id"))
     private UserMaster createdBy;
     
-    @Column(nullable = false, length = 2)
+    @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
     
-    @Column(length = 256)
+    @Column(name = "email", length = 256)
     private String email;
     
-    @Column(length = 1000)
+    @Column(name = "remarks", length = 1000)
     private String remarks;
 } 

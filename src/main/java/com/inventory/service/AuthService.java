@@ -1,17 +1,22 @@
 package com.inventory.service;
 
+import com.inventory.dto.ApiResponse;
 import com.inventory.dto.LoginRequest;
 import com.inventory.dto.RegisterRequest;
 import com.inventory.entity.UserMaster;
+import com.inventory.exception.ValidationException;
 import com.inventory.repository.UserRepository;
 import com.inventory.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -36,19 +41,27 @@ public class AuthService {
         return userRepository.save(userMaster);
     }
 
-    public String login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-        
-        String token = tokenProvider.generateToken(authentication);
-        
-        // Save token to database
-        UserMaster user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setJwtToken(token);
-        userRepository.save(user);
-        
-        return token;
+    public String login(LoginRequest request) throws ValidationException {
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+
+            String token = tokenProvider.generateToken(authentication);
+
+            // Save token to database
+            UserMaster user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+            user.setJwtToken(token);
+            user.setUpdatedAt(OffsetDateTime.now());
+            userRepository.save(user);
+            return token;
+        } catch (ValidationException ve) {
+            ve.printStackTrace();
+            throw ve;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ValidationException(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+        }
     }
 }

@@ -29,6 +29,13 @@ public class CustomerDto {
     private String email;
     private String remarks;
     private String status;
+
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime startDate;
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime endDate;
     
     // Search and pagination parameters
     private String search;

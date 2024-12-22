@@ -7,7 +7,11 @@ import java.math.BigDecimal;
 
 @Data
 @Entity
-@Table(name = "daily_profit")
+@Table(name = "daily_profit",
+    indexes = {
+        @Index(name = "idx_daily_sale_id", columnList = "sale_id"),
+    }
+)
 public class DailyProfit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,27 +21,27 @@ public class DailyProfit {
     @JoinColumn(name = "sale_id", nullable = false, referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_daily_profit_sale_id_sale_id"))
     private Sale sale;
     
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "purchase_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal purchaseAmount;
     
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "sale_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal saleAmount;
     
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "gross_profit", nullable = false, precision = 10, scale = 2)
     private BigDecimal grossProfit;
     
-    @Column(precision = 10, scale = 2)
+    @Column(name = "other_expenses", precision = 10, scale = 2)
     private BigDecimal otherExpenses;
     
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "net_profit", nullable = false, precision = 10, scale = 2)
     private BigDecimal netProfit;
     
-    @Column(nullable = false)
+    @Column(name = "profit_date", nullable = false)
     private OffsetDateTime profitDate;
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 }

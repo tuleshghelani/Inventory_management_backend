@@ -12,23 +12,24 @@ public class Client {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, length = 256)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
     
+    @Column(name = "address")
     private String address;
     
-    @Column(length = 32)
+    @Column(name = "phone", length = 32)
     private String phone;
     
-    @Column(length = 256)
+    @Column(name = "email", length = 256)
     private String email;
     
-    @Column(nullable = false, length = 2)
+    @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 }

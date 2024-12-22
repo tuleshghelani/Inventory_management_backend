@@ -14,33 +14,35 @@ public class UserMaster {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
-    
-    @Column(length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
     
-    @Column(nullable = false, length = 256)
+    @Column(name = "password", nullable = false, length = 256)
     private String password;
     
-    @Column(length = 64)
+    @Column(name = "first_name", length = 64)
     private String firstName;
     
-    @Column(length = 64)
+    @Column(name = "last_name", length = 64)
     private String lastName;
     
-    @Column(length = 256)
+    @Column(name = "jwt_token", length = 256)
     private String jwtToken;
     
-    @Column(nullable = false, length = 2)
+    @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
     
-    @Column(length = 64)
+    @Column(name = "email", length = 64)
     private String email;
     
-    @Column(nullable = false)
+    @Column(name = "fail_login_count", nullable = false)
     private Integer failLoginCount = 0;
     
+    @Column(name = "lock_time")
     private OffsetDateTime lockTime;
     
     @ManyToOne

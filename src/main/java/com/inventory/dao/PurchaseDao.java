@@ -81,7 +81,7 @@ public class PurchaseDao {
             params.put("productId", dto.getProductId());
         }
 
-        if (!Objects.isNull(dto.getProductId()) && dto.getProductId() > 0) {
+        if (!Objects.isNull(dto.getCategoryId()) && dto.getCategoryId() > 0) {
             sql.append(" AND p.category_id = :categoryId");
             params.put("categoryId", dto.getCategoryId());
         }

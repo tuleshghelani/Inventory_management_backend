@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -36,20 +37,20 @@ public class PurchaseService {
     private final QuantityTrackingService quantityTrackingService;
     private final SaleRepository saleRepository;
 
-    @Transactional
-    public ApiResponse<?> create(PurchaseDto dto) {
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResponse<?> create(PurchaseDto dto) throws ValidationException {
         try {
             validatePurchase(dto);
             
             // Check if invoice number is unique
             Optional<Purchase> existingPurchase = purchaseRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
             if (existingPurchase.isPresent()) {
-                throw new ValidationException("Invoice number already exists");
+                throw new ValidationException("Invoice number already exists", HttpStatus.UNPROCESSABLE_ENTITY);
             }
 
             // Get the product first
             Product product = productRepository.findById(dto.getProductId())
-                .orElseThrow(() -> new ValidationException("Product not found"));
+                .orElseThrow(() -> new ValidationException("Product not found", HttpStatus.UNPROCESSABLE_ENTITY));
 
             Purchase purchase = new Purchase();
             purchase.setProduct(product);
@@ -63,7 +64,7 @@ public class PurchaseService {
             try {
                 purchase.setPurchaseDate(dto.getPurchaseDate() != null ? dto.getPurchaseDate() : OffsetDateTime.now());
             } catch (Exception dateEx) {
-                throw new ValidationException("Invalid date format. Expected format: dd-MM-yyyy HH:mm:ss. Error: " + dateEx.getMessage());
+                throw new ValidationException("Invalid date format. Expected format: dd-MM-yyyy HH:mm:ss. Error: " + dateEx.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
             }
             
             purchase.setInvoiceNumber(dto.getInvoiceNumber().trim());
@@ -75,9 +76,9 @@ public class PurchaseService {
             purchase = purchaseRepository.save(purchase);
             quantityTrackingService.updateQuantitiesAfterPurchase(purchase);
             return ApiResponse.success("Purchase created successfully", mapToDto(purchase));
-        } catch (ValidationException e) {
-            e.printStackTrace();
-            return ApiResponse.error(e.getMessage()); 
+        } catch (ValidationException ve) {
+            ve.printStackTrace();
+            throw ve;
         } catch (Exception e) {
             e.printStackTrace();
             return ApiResponse.error("Failed to create purchase. Error: " + e.getMessage());

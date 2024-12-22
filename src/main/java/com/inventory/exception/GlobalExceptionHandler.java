@@ -12,7 +12,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiResponse<?>> handleValidationException(ValidationException ex) {
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
+                .status(ex.getHttpStatus())
                 .body(ApiResponse.error(ex.getMessage()));
     }
 

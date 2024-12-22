@@ -4,7 +4,7 @@ import org.springframework.http.HttpStatus;
 
 public class ValidationException extends RuntimeException {
 
-    private HttpStatus httpStatus;
+    private HttpStatus httpStatus = HttpStatus.UNPROCESSABLE_ENTITY;
     public ValidationException(String message) {
         super(message);
     }

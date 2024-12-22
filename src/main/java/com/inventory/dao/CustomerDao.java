@@ -27,6 +27,14 @@ public class CustomerDao {
             countSql.append(" AND (LOWER(c.name) LIKE LOWER(:search) OR c.mobile LIKE :search OR LOWER(c.gst) LIKE LOWER(:search))");
             params.put("search", "%" + dto.getSearch().trim() + "%");
         }
+        if(dto.getStartDate() != null){
+            countSql.append(" AND c.next_action_date >= :startDate");
+            params.put("startDate", dto.getStartDate());
+        }
+        if(dto.getEndDate() != null){
+            countSql.append(" AND c.next_action_date <= :endDate");
+            params.put("endDate", dto.getEndDate());
+        }
 
         Query countQuery = entityManager.createNativeQuery(countSql.toString());
         params.forEach(countQuery::setParameter);
@@ -45,7 +53,15 @@ public class CustomerDao {
         """);
 
         if (StringUtils.hasText(dto.getSearch())) {
-            sql.append(" AND (LOWER(c.name) LIKE LOWER(:search) OR c.mobile LIKE :search OR LOWER(c.gst) LIKE LOWER(:search))");
+            sql.append(" AND (LOWER(c.name) LIKE LOWER(:search))");
+        }
+        if(dto.getStartDate() != null){
+            sql.append(" AND c.next_action_date >= :startDate");
+            params.put("startDate", dto.getStartDate());
+        }
+        if(dto.getEndDate() != null){
+            sql.append(" AND c.next_action_date <= :endDate");
+            params.put("endDate", dto.getEndDate());
         }
 
         sql.append(" ORDER BY c.id DESC LIMIT :pageSize OFFSET :offset");

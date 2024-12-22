@@ -25,10 +25,7 @@ public class ProductDao {
         sql.append("""
             SELECT 
                 p.id,
-                p.name,
-                p.description,
-                p.minimum_stock,
-                p.status
+                p.name
             FROM product p
             WHERE 1=1
         """);
@@ -68,9 +65,6 @@ public class ProductDao {
                 Map<String, Object> product = new HashMap<>(10);
                 product.put("id", row[0]);
                 product.put("name", row[1]);
-                product.put("description", row[2]);
-                product.put("minimumStock", row[3]);
-                product.put("status", row[4]);
 
                 products.add(product);
             }

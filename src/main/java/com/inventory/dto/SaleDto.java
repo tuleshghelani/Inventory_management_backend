@@ -31,7 +31,11 @@ public class SaleDto {
     
     // Search and pagination parameters
     private String search;
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime startDate;
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime endDate;
     private Integer currentPage;
     private Integer perPageRecord;

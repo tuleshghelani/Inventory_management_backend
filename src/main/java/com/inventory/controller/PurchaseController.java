@@ -1,6 +1,7 @@
 package com.inventory.controller;
 
 import com.inventory.dto.PurchaseDto;
+import com.inventory.exception.ValidationException;
 import com.inventory.service.PurchaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ public class PurchaseController {
     private final PurchaseService purchaseService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> create(@RequestBody PurchaseDto request) {
+    public ResponseEntity<?> create(@RequestBody PurchaseDto request) throws ValidationException {
         return ResponseEntity.ok(purchaseService.create(request));
     }
 

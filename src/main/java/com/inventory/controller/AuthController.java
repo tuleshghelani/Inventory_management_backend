@@ -1,9 +1,11 @@
 
 package com.inventory.controller;
 
+import com.inventory.dto.ApiResponse;
 import com.inventory.dto.JwtAuthenticationResponse;
 import com.inventory.dto.LoginRequest;
 import com.inventory.dto.RegisterRequest;
+import com.inventory.exception.ValidationException;
 import com.inventory.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +24,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) throws ValidationException {
         String token = authService.login(request);
         return ResponseEntity.ok(new JwtAuthenticationResponse(token));
     }
