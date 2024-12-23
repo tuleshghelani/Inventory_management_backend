@@ -17,6 +17,7 @@ public class ProductDto {
     private String search;
     private Long categoryId;
     private String description;
+    private BigDecimal amount;
     private BigDecimal minimumStock;
     private String status;
     private Integer remainingQuantity;

@@ -26,9 +26,12 @@ public class Product {
     @Column(name = "name", nullable = false, length = 256)
     private String name;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_product_category_id_category_id"))
     private Category category;
+
+    @Column(name = "amount", precision = 10, scale = 2, columnDefinition = "numeric(10,2) DEFAULT 0")
+    private BigDecimal amount = BigDecimal.valueOf(0.00);
     
     @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
@@ -36,7 +39,7 @@ public class Product {
     @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_product_created_by_user_master_id"))
     private UserMaster createdBy;
     

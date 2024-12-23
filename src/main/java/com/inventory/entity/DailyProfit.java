@@ -17,7 +17,7 @@ public class DailyProfit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sale_id", nullable = false, referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_daily_profit_sale_id_sale_id"))
     private Sale sale;
     

@@ -45,7 +45,7 @@ public class UserMaster {
     @Column(name = "lock_time")
     private OffsetDateTime lockTime;
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_user_master_client_id_client_id"))
     private Client client;
 }

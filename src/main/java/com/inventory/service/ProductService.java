@@ -41,6 +41,7 @@ public class ProductService {
             product.setCategory(categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ValidationException("Category not found")));
             product.setDescription(dto.getDescription());
+            product.setAmount(dto.getAmount() != null ? dto.getAmount() : BigDecimal.valueOf(0));
             product.setMinimumStock(dto.getMinimumStock());
             product.setStatus(dto.getStatus().trim());
             
@@ -70,6 +71,7 @@ public class ProductService {
             product.setCategory(categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ValidationException("Category not found")));
             product.setDescription(dto.getDescription());
+            product.setAmount(dto.getAmount() != null ? dto.getAmount() : BigDecimal.valueOf(0));
             product.setMinimumStock(dto.getMinimumStock());
             product.setStatus(dto.getStatus().trim());
             
