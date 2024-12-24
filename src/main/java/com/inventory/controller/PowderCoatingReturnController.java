@@ -17,4 +17,14 @@ public class PowderCoatingReturnController {
     public ResponseEntity<?> searchReturns(@RequestBody PowderCoatingReturnDto request) {
         return ResponseEntity.ok(returnService.searchReturns(request));
     }
+    
+    @PostMapping("/delete")
+    public ResponseEntity<?> delete(@RequestBody PowderCoatingReturnDto request) {
+        return ResponseEntity.ok(returnService.delete(request.getId()));
+    }
+    
+    @PostMapping("/update")
+    public ResponseEntity<?> update(@RequestBody PowderCoatingReturnDto request) {
+        return ResponseEntity.ok(returnService.update(request.getId(), request));
+    }
 } 

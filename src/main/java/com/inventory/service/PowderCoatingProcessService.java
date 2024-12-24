@@ -97,7 +97,7 @@ public class PowderCoatingProcessService {
     }
 
     @Transactional
-    public ApiResponse<?> returnQuantity(Long processId, Integer returnQuantity) {
+    public ApiResponse<?> returnQuantity(Long processId, Integer returnQuantity, OffsetDateTime returnDate) {
         try {
             if (returnQuantity <= 0) {
                 throw new ValidationException("Return quantity must be greater than 0");
@@ -110,25 +110,26 @@ public class PowderCoatingProcessService {
                 throw new ValidationException("Return quantity cannot be greater than remaining quantity");
             }
 
-            // Update remaining quantity
             process.setRemainingQuantity(process.getRemainingQuantity() - returnQuantity);
+
+            if (process.getRemainingQuantity() == 0) {
+                process.setStatus("C");
+            }
+            
             process.setUpdatedAt(OffsetDateTime.now());
             processRepository.save(process);
 
-            // Create return record
+            // Create return record with custom date if provided
             PowderCoatingReturn returnRecord = new PowderCoatingReturn();
             returnRecord.setProcess(process);
             returnRecord.setReturnQuantity(returnQuantity);
             returnRecord.setCreatedBy(utilityService.getCurrentLoggedInUser());
+            if (returnDate != null) {
+                returnRecord.setCreatedAt(returnDate);
+            }
             returnRepository.save(returnRecord);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("processId", process.getId());
-            response.put("returnedQuantity", returnQuantity);
-            response.put("remainingQuantity", process.getRemainingQuantity());
-            response.put("returnId", returnRecord.getId());
-
-            return ApiResponse.success("Quantity returned successfully", response);
+            return ApiResponse.success("Quantity returned successfully");
         } catch (ValidationException e) {
             throw e;
         } catch (Exception e) {

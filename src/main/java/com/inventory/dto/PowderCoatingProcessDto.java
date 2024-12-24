@@ -27,6 +27,10 @@ public class PowderCoatingProcessDto {
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime createdAt;
     
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime returnDate;
+    
     // Search and pagination parameters
     private String search;
     private Integer currentPage = 0;
