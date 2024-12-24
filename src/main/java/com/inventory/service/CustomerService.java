@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -93,6 +94,32 @@ public class CustomerService {
             return ApiResponse.success("Customers retrieved successfully", result);
         } catch (Exception e) {
             throw new ValidationException("Failed to search customers: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<List<Map<String, Object>>> getCustomers(CustomerDto dto) {
+        try {
+            List<Map<String, Object>> customers = customerDao.getCustomers(dto);
+            return ApiResponse.success("Customers retrieved successfully", customers);
+        } catch (Exception e) {
+            throw new ValidationException("Failed to retrieve customers: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<?> getCustomer(Long id) {
+        try {
+            if (id == null) {
+                throw new ValidationException("Customer ID is required");
+            }
+            
+            Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Customer not found"));
+            
+            return ApiResponse.success("Customer retrieved successfully", mapEntityToDto(customer));
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to retrieve customer: " + e.getMessage());
         }
     }
 

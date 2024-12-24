@@ -32,4 +32,14 @@ public class CustomerController {
     public ResponseEntity<?> searchCustomers(@RequestBody CustomerDto request) {
         return ResponseEntity.ok(customerService.searchCustomers(request));
     }
+
+    @PostMapping("/getCustomers")
+    public ResponseEntity<?> getCustomers(@RequestBody CustomerDto request) {
+        return ResponseEntity.ok(customerService.getCustomers(request));
+    }
+
+    @PostMapping("/getCustomer")
+    public ResponseEntity<?> getCustomer(@RequestBody CustomerDto request) {
+        return ResponseEntity.ok(customerService.getCustomer(request.getId()));
+    }
 } 

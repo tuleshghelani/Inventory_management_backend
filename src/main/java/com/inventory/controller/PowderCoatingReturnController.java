@@ -27,4 +27,9 @@ public class PowderCoatingReturnController {
     public ResponseEntity<?> update(@RequestBody PowderCoatingReturnDto request) {
         return ResponseEntity.ok(returnService.update(request.getId(), request));
     }
+
+    @PostMapping("/getByProcessId")
+    public ResponseEntity<?> getByProcessId(@RequestBody PowderCoatingReturnDto request) {
+        return ResponseEntity.ok(returnService.getByProcessId(request.getProcessId()));
+    }
 } 

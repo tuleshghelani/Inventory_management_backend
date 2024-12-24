@@ -102,4 +102,44 @@ public class CustomerDao {
 
         return response;
     }
+
+    
+    public List<Map<String, Object>> getCustomers(CustomerDto dto) {
+        StringBuilder sql = new StringBuilder();
+        Map<String, Object> params = new HashMap<>();
+
+        sql.append("""
+            SELECT 
+                c.id,
+                c.name
+            FROM customer c
+            WHERE c.status = 'A'
+        """);
+
+        if (StringUtils.hasText(dto.getSearch())) {
+            sql.append(" AND LOWER(c.name) LIKE LOWER(:search)");
+            params.put("search", "%" + dto.getSearch().trim() + "%");
+        }
+
+        sql.append(" ORDER BY c.name ASC");
+
+        Query query = entityManager.createNativeQuery(sql.toString());
+        params.forEach(query::setParameter);
+
+        List<Object[]> results = query.getResultList();
+        return transformResults(results);
+    }
+
+    private List<Map<String, Object>> transformResults(List<Object[]> results) {
+        List<Map<String, Object>> customers = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Map<String, Object> customer = new HashMap<>();
+            customer.put("id", row[0]);
+            customer.put("name", row[1]);
+            customers.add(customer);
+        }
+        
+        return customers;
+    }
 } 

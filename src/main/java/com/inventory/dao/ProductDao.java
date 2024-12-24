@@ -26,7 +26,8 @@ public class ProductDao {
             SELECT 
                 p.id,
                 p.name,
-                p.amount
+                p.purchase_amount,
+                p.sale_amount
             FROM product p
             WHERE 1=1
         """);
@@ -66,7 +67,8 @@ public class ProductDao {
                 Map<String, Object> product = new HashMap<>(10);
                 product.put("id", row[0]);
                 product.put("name", row[1]);
-                product.put("amount", row[2]);
+                product.put("purchase_amount", row[2]);
+                product.put("sale_amount", row[3]);
 
                 products.add(product);
             }
@@ -108,7 +110,8 @@ public class ProductDao {
                 p.remaining_quantity,
                 c.id as category_id,
                 c.name as category_name,
-                p.amount
+                p.purchase_amount,
+                p.sale_amount
             FROM product p
             LEFT JOIN category c ON p.category_id = c.id
             WHERE 1=1
@@ -169,7 +172,8 @@ public class ProductDao {
                 product.put("remainingQuantity", row[5]);
                 product.put("categoryId", row[6]);
                 product.put("categoryName", row[7]);
-                product.put("amount", row[8]);
+                product.put("purchase_amount", row[8]);
+                product.put("sale_amount", row[9]);
                 products.add(product);
             }
         }

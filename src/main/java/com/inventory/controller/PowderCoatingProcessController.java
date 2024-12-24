@@ -41,4 +41,11 @@ public class PowderCoatingProcessController {
             request.getReturnDate()
         ));
     }
+
+    @PostMapping("/getProcess")
+    public ResponseEntity<?> getProcess(@RequestBody PowderCoatingProcessDto request) {
+        return ResponseEntity.ok(processService.getProcess(request.getId()));
+    }
+
+    
 } 

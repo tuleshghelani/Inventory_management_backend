@@ -43,7 +43,7 @@ public class PowderCoatingProcessService {
             process.setCreatedBy(utilityService.getCurrentLoggedInUser());
             process.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
             
-            process = processRepository.save(process);
+            processRepository.save(process);
             return ApiResponse.success("Process created successfully");
         } catch (Exception e) {
             throw new ValidationException("Failed to create process: " + e.getMessage());
@@ -161,5 +161,33 @@ public class PowderCoatingProcessService {
         dto.setProductName(process.getProduct().getName());
         dto.setCreatedAt(process.getCreatedAt());
         return dto;
+    }
+
+    public ApiResponse<?> getProcess(Long id) {
+        try {
+            if (id == null) {
+                throw new ValidationException("Process ID is required");
+            }
+            
+            PowderCoatingProcess process = processRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Process not found"));
+            
+            Map<String, Object> processDetails = new HashMap<>();
+            processDetails.put("id", process.getId());
+            processDetails.put("customerId", process.getCustomer().getId());
+            processDetails.put("productId", process.getProduct().getId());
+            processDetails.put("quantity", process.getQuantity());
+            processDetails.put("remainingQuantity", process.getRemainingQuantity());
+            processDetails.put("status", process.getStatus());
+            processDetails.put("customerName", process.getCustomer().getName());
+            processDetails.put("productName", process.getProduct().getName());
+            processDetails.put("createdAt", process.getCreatedAt());
+            
+            return ApiResponse.success("Process retrieved successfully", processDetails);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to retrieve process: " + e.getMessage());
+        }
     }
 } 

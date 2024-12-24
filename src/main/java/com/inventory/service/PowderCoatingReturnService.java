@@ -13,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.Map;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -108,6 +111,31 @@ public class PowderCoatingReturnService {
         }
         if (dto.getReturnQuantity() == null || dto.getReturnQuantity() <= 0) {
             throw new ValidationException("Valid return quantity is required");
+        }
+    }
+
+    public ApiResponse<?> getByProcessId(Long processId) {
+        try {
+            if (processId == null) {
+                throw new ValidationException("Process ID is required");
+            }
+
+            List<Map<String, Object>> returns = returnRepository.findByProcessId(processId)
+                .stream()
+                .map(returnRecord -> {
+                    Map<String, Object> returnMap = new HashMap<>();
+                    returnMap.put("id", returnRecord.getId());
+                    returnMap.put("returnQuantity", returnRecord.getReturnQuantity());
+                    returnMap.put("createdAt", returnRecord.getCreatedAt());
+                    return returnMap;
+                })
+                .collect(Collectors.toList());
+
+            return ApiResponse.success("Return records retrieved successfully", returns);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to retrieve return records: " + e.getMessage());
         }
     }
 } 

@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.Map;
 
 @Service
@@ -41,7 +40,8 @@ public class ProductService {
             product.setCategory(categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ValidationException("Category not found")));
             product.setDescription(dto.getDescription());
-            product.setAmount(dto.getAmount() != null ? dto.getAmount() : BigDecimal.valueOf(0));
+            product.setPurchaseAmount(dto.getPurchaseAmount() != null ? dto.getPurchaseAmount() : BigDecimal.valueOf(0));
+            product.setSaleAmount(dto.getSaleAmount() != null ? dto.getSaleAmount() : BigDecimal.valueOf(0));
             product.setMinimumStock(dto.getMinimumStock());
             product.setStatus(dto.getStatus().trim());
             
@@ -71,7 +71,8 @@ public class ProductService {
             product.setCategory(categoryRepository.findById(dto.getCategoryId())
                 .orElseThrow(() -> new ValidationException("Category not found")));
             product.setDescription(dto.getDescription());
-            product.setAmount(dto.getAmount() != null ? dto.getAmount() : BigDecimal.valueOf(0));
+            product.setPurchaseAmount(dto.getPurchaseAmount() != null ? dto.getPurchaseAmount() : BigDecimal.valueOf(0));
+            product.setSaleAmount(dto.getSaleAmount() != null ? dto.getSaleAmount() : BigDecimal.valueOf(0));
             product.setMinimumStock(dto.getMinimumStock());
             product.setStatus(dto.getStatus().trim());
             
