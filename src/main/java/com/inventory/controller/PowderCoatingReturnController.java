@@ -1,0 +1,20 @@
+package com.inventory.controller;
+
+import com.inventory.dto.PowderCoatingReturnDto;
+import com.inventory.service.PowderCoatingReturnService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/powder-coating-returns")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
+@RequiredArgsConstructor
+public class PowderCoatingReturnController {
+    private final PowderCoatingReturnService returnService;
+
+    @PostMapping("/search")
+    public ResponseEntity<?> searchReturns(@RequestBody PowderCoatingReturnDto request) {
+        return ResponseEntity.ok(returnService.searchReturns(request));
+    }
+} 
