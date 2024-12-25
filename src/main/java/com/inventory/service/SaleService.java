@@ -10,6 +10,7 @@ import com.inventory.repository.SaleRepository;
 import com.inventory.repository.PurchaseRepository;
 import com.inventory.repository.DailyProfitRepository;
 import com.inventory.dao.SaleDao;
+import com.inventory.util.DiscountCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,10 +35,10 @@ public class SaleService {
         try {
             validateSale(dto);
             
-            Optional<Sale> existingSale = saleRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
-            if (existingSale.isPresent()) {
-                throw new ValidationException("Invoice number already exists");
-            }
+//            Optional<Sale> existingSale = saleRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
+//            if (existingSale.isPresent()) {
+//                throw new ValidationException("Invoice number already exists");
+//            }
 
             Purchase purchase = purchaseRepository.findById(dto.getPurchaseId())
                 .orElseThrow(() -> new ValidationException("Purchase not found"));
@@ -50,7 +51,7 @@ public class SaleService {
             sale.setPurchase(purchase);
             sale.setQuantity(dto.getQuantity());
             sale.setUnitPrice(dto.getUnitPrice());
-            sale.setTotalAmount(calculateTotalAmount(dto.getUnitPrice(), dto.getQuantity()));
+            calculateAmounts(sale, dto);
             sale.setSaleDate(dto.getSaleDate());
             sale.setInvoiceNumber(dto.getInvoiceNumber().trim());
             sale.setOtherExpenses(dto.getOtherExpenses());
@@ -115,7 +116,7 @@ public class SaleService {
             existingSale.setPurchase(newPurchase);
             existingSale.setQuantity(dto.getQuantity());
             existingSale.setUnitPrice(dto.getUnitPrice());
-            existingSale.setTotalAmount(calculateTotalAmount(dto.getUnitPrice(), dto.getQuantity()));
+            calculateAmounts(existingSale, dto);
             existingSale.setSaleDate(dto.getSaleDate()!= null ? dto.getSaleDate() : OffsetDateTime.now());
             existingSale.setInvoiceNumber(dto.getInvoiceNumber().trim());
             existingSale.setOtherExpenses(dto.getOtherExpenses());
@@ -199,16 +200,43 @@ public class SaleService {
         if (dto.getOtherExpenses() != null && dto.getOtherExpenses().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("Other expenses cannot be negative");
         }
+        
+        if (dto.getDiscount() != null) {
+            if (dto.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ValidationException("Discount percentage cannot be negative");
+            }
+            if (dto.getDiscount().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new ValidationException("Discount percentage cannot be greater than 100");
+            }
+        }
     }
 
-    private BigDecimal calculateTotalAmount(BigDecimal unitPrice, Integer quantity) {
-        return unitPrice.multiply(BigDecimal.valueOf(quantity));
+    private void calculateAmounts(Sale sale, SaleDto dto) {
+        // Calculate base amount
+        BigDecimal baseAmount = dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity()));
+        
+        // Calculate discount amount
+        BigDecimal discountAmount = dto.getDiscountAmount();
+        
+        // Calculate discounted price
+        BigDecimal discountPrice = DiscountCalculator.calculateDiscountedPrice(baseAmount, discountAmount);
+        
+        // Calculate total amount including other expenses
+        BigDecimal totalAmount = DiscountCalculator.calculateTotalAmount(discountPrice, dto.getOtherExpenses());
+        
+        // Set all calculated values
+        sale.setDiscount(dto.getDiscount());
+        sale.setDiscountAmount(discountAmount);
+        sale.setDiscountPrice(discountPrice);
+        sale.setTotalAmount(totalAmount);
     }
 
     private void calculateAndSaveProfit(Sale sale) {
         BigDecimal purchaseAmount = sale.getPurchase().getUnitPrice()
             .multiply(BigDecimal.valueOf(sale.getQuantity()));
-        BigDecimal saleAmount = sale.getTotalAmount();
+        
+        // Use discounted price for profit calculations
+        BigDecimal saleAmount = sale.getDiscountPrice();
         BigDecimal grossProfit = saleAmount.subtract(purchaseAmount);
         BigDecimal netProfit = grossProfit.subtract(sale.getOtherExpenses() != null ? 
             sale.getOtherExpenses() : BigDecimal.ZERO);
@@ -235,6 +263,9 @@ public class SaleService {
         dto.setSaleDate(sale.getSaleDate());
         dto.setInvoiceNumber(sale.getInvoiceNumber());
         dto.setOtherExpenses(sale.getOtherExpenses());
+        dto.setDiscount(sale.getDiscount());
+        dto.setDiscountAmount(sale.getDiscountAmount());
+        dto.setDiscountPrice(sale.getDiscountPrice());
         return dto;
     }
 }

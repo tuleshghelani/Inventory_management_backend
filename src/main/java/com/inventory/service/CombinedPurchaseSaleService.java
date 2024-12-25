@@ -5,6 +5,7 @@ import com.inventory.dto.CombinedPurchaseSaleDto;
 import com.inventory.entity.*;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.*;
+import com.inventory.util.DiscountCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +50,10 @@ public class CombinedPurchaseSaleService {
             purchase.setCategory(product.getCategory());
             purchase.setQuantity(dto.getQuantity());
             purchase.setUnitPrice(dto.getPurchaseUnitPrice());
-            purchase.setTotalAmount(calculateTotalAmount(dto.getPurchaseUnitPrice(), dto.getQuantity(), dto.getPurchaseOtherExpenses()));
+            
+            // Calculate purchase amounts with discount
+            calculatePurchaseAmounts(purchase, dto);
+            
             purchase.setPurchaseDate(dto.getPurchaseDate() != null ? dto.getPurchaseDate() : OffsetDateTime.now());
             purchase.setInvoiceNumber(dto.getPurchaseInvoiceNumber());
             purchase.setOtherExpenses(dto.getPurchaseOtherExpenses());
@@ -64,7 +68,10 @@ public class CombinedPurchaseSaleService {
             sale.setPurchase(purchase);
             sale.setQuantity(dto.getQuantity());
             sale.setUnitPrice(dto.getSaleUnitPrice());
-            sale.setTotalAmount(calculateTotalAmount(dto.getSaleUnitPrice(), dto.getQuantity(), dto.getSaleOtherExpenses()));
+            
+            // Calculate sale amounts with discount
+            calculateSaleAmounts(sale, dto);
+            
             sale.setSaleDate(dto.getSaleDate() != null ? dto.getSaleDate() : OffsetDateTime.now());
             sale.setInvoiceNumber(dto.getSaleInvoiceNumber());
             sale.setOtherExpenses(dto.getSaleOtherExpenses());
@@ -73,26 +80,8 @@ public class CombinedPurchaseSaleService {
             sale = saleRepository.save(sale);
             quantityTrackingService.updateQuantitiesAfterSale(sale);
 
-            // Create daily profit
-            DailyProfit dailyProfit = new DailyProfit();
-            dailyProfit.setSale(sale);
-            
-            // Calculate purchase amount based on quantity
-            BigDecimal purchaseAmount = purchase.getUnitPrice()
-                .multiply(BigDecimal.valueOf(sale.getQuantity()));
-            BigDecimal saleAmount = sale.getTotalAmount();
-            
-            dailyProfit.setPurchaseAmount(purchaseAmount);
-            dailyProfit.setSaleAmount(saleAmount);
-            dailyProfit.setGrossProfit(saleAmount.subtract(purchaseAmount));
-            dailyProfit.setOtherExpenses(sale.getOtherExpenses());
-            
-            // Calculate net profit
-            dailyProfit.setNetProfit(dailyProfit.getGrossProfit().subtract(
-                sale.getOtherExpenses() != null ? sale.getOtherExpenses() : BigDecimal.ZERO));
-            dailyProfit.setProfitDate(sale.getSaleDate());
-            
-            dailyProfitRepository.save(dailyProfit);
+            // Create daily profit using discounted prices
+            createDailyProfit(purchase, sale);
 
             return ApiResponse.success("Purchase and sale created successfully");
         } catch (ValidationException ve) {
@@ -102,11 +91,64 @@ public class CombinedPurchaseSaleService {
         }
     }
 
-    private BigDecimal calculateTotalAmount(BigDecimal unitPrice, Integer quantity, BigDecimal otherExpenses) {
-        BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        if (otherExpenses != null) {
-            total = total.add(otherExpenses);
-        }
-        return total;
+    private void calculatePurchaseAmounts(Purchase purchase, CombinedPurchaseSaleDto dto) {
+        // Calculate base amount
+        BigDecimal baseAmount = dto.getPurchaseUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity()));
+        
+        // Calculate discount amount
+        BigDecimal discountAmount = dto.getPurchaseDiscountAmount();
+        
+        // Calculate discounted price
+        BigDecimal discountPrice = DiscountCalculator.calculateDiscountedPrice(baseAmount, discountAmount);
+        
+        // Calculate total amount including other expenses
+        BigDecimal totalAmount = DiscountCalculator.calculateTotalAmount(discountPrice, dto.getPurchaseOtherExpenses());
+        
+        // Set all calculated values
+        purchase.setDiscount(dto.getPurchaseDiscount());
+        purchase.setDiscountAmount(discountAmount);
+        purchase.setDiscountPrice(discountPrice);
+        purchase.setTotalAmount(totalAmount);
+    }
+
+    private void calculateSaleAmounts(Sale sale, CombinedPurchaseSaleDto dto) {
+        // Calculate base amount
+        BigDecimal baseAmount = dto.getSaleUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity()));
+        
+        // Calculate discount amount
+        BigDecimal discountAmount = dto.getSaleDiscountAmount();
+        
+        // Calculate discounted price
+        BigDecimal discountPrice = DiscountCalculator.calculateDiscountedPrice(baseAmount, discountAmount);
+        
+        // Calculate total amount including other expenses
+        BigDecimal totalAmount = DiscountCalculator.calculateTotalAmount(discountPrice, dto.getSaleOtherExpenses());
+        
+        // Set all calculated values
+        sale.setDiscount(dto.getSaleDiscount());
+        sale.setDiscountAmount(discountAmount);
+        sale.setDiscountPrice(discountPrice);
+        sale.setTotalAmount(totalAmount);
+    }
+
+    private void createDailyProfit(Purchase purchase, Sale sale) {
+        DailyProfit dailyProfit = new DailyProfit();
+        dailyProfit.setSale(sale);
+        
+        // Use discounted prices for profit calculations
+        BigDecimal purchaseAmount = purchase.getDiscountPrice();
+        BigDecimal saleAmount = sale.getDiscountPrice();
+        
+        dailyProfit.setPurchaseAmount(purchaseAmount);
+        dailyProfit.setSaleAmount(saleAmount);
+        dailyProfit.setGrossProfit(saleAmount.subtract(purchaseAmount));
+        dailyProfit.setOtherExpenses(sale.getOtherExpenses());
+        
+        // Calculate net profit using discounted prices
+        dailyProfit.setNetProfit(dailyProfit.getGrossProfit().subtract(
+            sale.getOtherExpenses() != null ? sale.getOtherExpenses() : BigDecimal.ZERO));
+        dailyProfit.setProfitDate(sale.getSaleDate());
+        
+        dailyProfitRepository.save(dailyProfit);
     }
 } 

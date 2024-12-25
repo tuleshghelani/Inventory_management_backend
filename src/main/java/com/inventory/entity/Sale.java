@@ -48,4 +48,13 @@ public class Sale {
     
     @Column(name = "invoice_number")
     private String invoiceNumber;
+    
+    @Column(name = "discount", precision = 6, scale = 4)
+    private BigDecimal discount;
+    
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    private BigDecimal discountAmount;
+    
+    @Column(name = "discount_price", precision = 10, scale = 2)
+    private BigDecimal discountPrice;
 }

@@ -39,4 +39,8 @@ public class SaleDto {
     private OffsetDateTime endDate;
     private Integer currentPage;
     private Integer perPageRecord;
+
+    private BigDecimal discount;
+    private BigDecimal discountAmount;
+    private BigDecimal discountPrice;
 }

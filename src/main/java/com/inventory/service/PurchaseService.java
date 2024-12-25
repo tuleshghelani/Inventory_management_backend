@@ -8,6 +8,7 @@ import com.inventory.exception.ValidationException;
 import com.inventory.repository.PurchaseRepository;
 import com.inventory.repository.ProductRepository;
 import com.inventory.repository.SaleRepository;
+import com.inventory.util.DiscountCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -43,10 +44,10 @@ public class PurchaseService {
             validatePurchase(dto);
             
             // Check if invoice number is unique
-            Optional<Purchase> existingPurchase = purchaseRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
-            if (existingPurchase.isPresent()) {
-                throw new ValidationException("Invoice number already exists", HttpStatus.UNPROCESSABLE_ENTITY);
-            }
+//            Optional<Purchase> existingPurchase = purchaseRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
+//            if (existingPurchase.isPresent()) {
+//                throw new ValidationException("Invoice number already exists", HttpStatus.UNPROCESSABLE_ENTITY);
+//            }
 
             // Get the product first
             Product product = productRepository.findById(dto.getProductId())
@@ -59,7 +60,7 @@ public class PurchaseService {
             
             purchase.setQuantity(dto.getQuantity());
             purchase.setUnitPrice(dto.getUnitPrice());
-            purchase.setTotalAmount(calculateTotalAmount(dto.getUnitPrice(), dto.getQuantity(), dto.getOtherExpenses()));
+            calculateAmounts(purchase, dto);
             
             try {
                 purchase.setPurchaseDate(dto.getPurchaseDate() != null ? dto.getPurchaseDate() : OffsetDateTime.now());
@@ -77,11 +78,9 @@ public class PurchaseService {
             quantityTrackingService.updateQuantitiesAfterPurchase(purchase);
             return ApiResponse.success("Purchase created successfully", mapToDto(purchase));
         } catch (ValidationException ve) {
-            ve.printStackTrace();
             throw ve;
         } catch (Exception e) {
-            e.printStackTrace();
-            return ApiResponse.error("Failed to create purchase. Error: " + e.getMessage());
+            throw new ValidationException("Failed to create purchase: " + e.getMessage());
         }
     }
 
@@ -116,11 +115,35 @@ public class PurchaseService {
         if (dto.getOtherExpenses() != null && dto.getOtherExpenses().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("Other expenses cannot be negative");
         }
+        
+        if (dto.getDiscount() != null) {
+            if (dto.getDiscount().compareTo(BigDecimal.ZERO) < 0) {
+                throw new ValidationException("Discount percentage cannot be negative");
+            }
+            if (dto.getDiscount().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new ValidationException("Discount percentage cannot be greater than 100");
+            }
+        }
     }
 
-    private BigDecimal calculateTotalAmount(BigDecimal unitPrice, Integer quantity, BigDecimal otherExpenses) {
-        BigDecimal baseAmount = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        return otherExpenses != null ? baseAmount.add(otherExpenses) : baseAmount;
+    private void calculateAmounts(Purchase purchase, PurchaseDto dto) {
+        // Calculate base amount
+        BigDecimal baseAmount = dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity()));
+        
+        // Calculate discount amount
+        BigDecimal discountAmount = dto.getDiscountAmount();
+        
+        // Calculate discounted price
+        BigDecimal discountPrice = DiscountCalculator.calculateDiscountedPrice(baseAmount, discountAmount);
+        
+        // Calculate total amount including other expenses
+        BigDecimal totalAmount = DiscountCalculator.calculateTotalAmount(discountPrice, dto.getOtherExpenses());
+        
+        // Set all calculated values
+        purchase.setDiscount(dto.getDiscount());
+        purchase.setDiscountAmount(discountAmount);
+        purchase.setDiscountPrice(discountPrice);
+        purchase.setTotalAmount(totalAmount);
     }
 
     private PurchaseDto mapToDto(Purchase purchase) {

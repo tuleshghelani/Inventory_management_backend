@@ -172,8 +172,8 @@ public class ProductDao {
                 product.put("remainingQuantity", row[5]);
                 product.put("categoryId", row[6]);
                 product.put("categoryName", row[7]);
-                product.put("purchase_amount", row[8]);
-                product.put("sale_amount", row[9]);
+                product.put("purchaseAmount", row[8]);
+                product.put("saleAmount", row[9]);
                 products.add(product);
             }
         }
