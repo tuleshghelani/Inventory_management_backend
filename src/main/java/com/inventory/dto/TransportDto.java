@@ -30,6 +30,14 @@ public class TransportDto {
     private String sortBy = "id";
     private String sortDir = "desc";
     
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime startDate;
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime endDate;
+    
     @Data
     @Getter
     @Setter

@@ -62,6 +62,18 @@ public class TransportDao {
             dataQuery.append(" AND LOWER(c.name) LIKE :search");
             params.put("search", search);
         }
+        
+        if (dto.getStartDate() != null) {
+            countQuery.append(" AND t.createdAt >= :startDate");
+            dataQuery.append(" AND t.createdAt >= :startDate");
+            params.put("startDate", dto.getStartDate());
+        }
+
+        if (dto.getEndDate() != null) {
+            countQuery.append(" AND t.createdAt <= :endDate");
+            dataQuery.append(" AND t.createdAt <= :endDate");
+            params.put("endDate", dto.getEndDate());
+        }
     }
 
     private void setParameters(Query query, Map<String, Object> params) {
