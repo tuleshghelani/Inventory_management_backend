@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -27,10 +28,12 @@ public class EmployeeService {
     public ApiResponse<?> create(EmployeeDto dto) {
         try {
             validateEmployee(dto);
-            
-            Optional<Employee> existingEmployee = employeeRepository.findByMobileNumber(dto.getMobileNumber().trim());
-            if (existingEmployee.isPresent()) {
-                throw new ValidationException("Employee with this mobile number already exists");
+
+            if(!Objects.isNull(dto.getMobileNumber())) {
+                Optional<Employee> existingEmployee = employeeRepository.findByMobileNumber(dto.getMobileNumber().trim());
+                if (existingEmployee.isPresent()) {
+                    throw new ValidationException("Employee with this mobile number already exists");
+                }
             }
 
             Employee employee = new Employee();
@@ -54,10 +57,12 @@ public class EmployeeService {
             Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Employee not found"));
 
-            Optional<Employee> existingEmployee = employeeRepository.findByMobileNumberAndIdNot(
-                dto.getMobileNumber().trim(), employee.getId());
-            if (existingEmployee.isPresent()) {
-                throw new ValidationException("Employee with this mobile number already exists");
+            if(!Objects.isNull(dto.getMobileNumber())) {
+                Optional<Employee> existingEmployee = employeeRepository.findByMobileNumberAndIdNot(
+                        dto.getMobileNumber().trim(), employee.getId());
+                if (existingEmployee.isPresent()) {
+                    throw new ValidationException("Employee with this mobile number already exists");
+                }
             }
 
             mapDtoToEntity(dto, employee);
@@ -96,6 +101,28 @@ public class EmployeeService {
         }
     }
 
+    public ApiResponse<?> getEmployeeDetail(EmployeeDto dto) {
+        try {
+            if (dto.getId() == null) {
+                throw new ValidationException("Employee ID is required");
+            }
+            
+            Map<String, Object> result = employeeDao.getEmployeeDetail(dto.getId());
+            return ApiResponse.success("Employee detail retrieved successfully", result);
+        } catch (Exception e) {
+            throw new ValidationException("Failed to get employee detail: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<?> getAllEmployees() {
+        try {
+            List<Map<String, Object>> employees = employeeDao.getAllEmployees();
+            return ApiResponse.success("Employees retrieved successfully", employees);
+        } catch (Exception e) {
+            throw new ValidationException("Failed to get employees: " + e.getMessage());
+        }
+    }
+
     private void validateEmployee(EmployeeDto dto) {
         if (!StringUtils.hasText(dto.getName())) {
             throw new ValidationException("Name is required");
@@ -110,12 +137,11 @@ public class EmployeeService {
 
     private void mapDtoToEntity(EmployeeDto dto, Employee employee) {
         employee.setName(dto.getName().trim());
-        employee.setMobileNumber(dto.getMobileNumber().trim());
+        employee.setMobileNumber(dto.getMobileNumber() != null ? dto.getMobileNumber().trim() : null);
         employee.setEmail(dto.getEmail());
         employee.setAddress(dto.getAddress());
         employee.setDesignation(dto.getDesignation());
         employee.setDepartment(dto.getDepartment());
-        employee.setJoiningDate(dto.getJoiningDate());
         employee.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
     }
 
@@ -128,7 +154,6 @@ public class EmployeeService {
         dto.setAddress(employee.getAddress());
         dto.setDesignation(employee.getDesignation());
         dto.setDepartment(employee.getDepartment());
-        dto.setJoiningDate(employee.getJoiningDate());
         dto.setStatus(employee.getStatus());
         return dto;
     }

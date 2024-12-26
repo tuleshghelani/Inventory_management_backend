@@ -109,7 +109,6 @@ public class TransportDao {
                 c.name as customerName
             FROM transport t
             JOIN customer c ON t.customer_id = c.id
-            LEFT JOIN user_master u ON t.created_by = u.id
             WHERE t.id = :transportId
         """;
         

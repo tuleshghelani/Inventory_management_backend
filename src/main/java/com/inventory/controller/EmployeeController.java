@@ -32,4 +32,14 @@ public class EmployeeController {
     public ResponseEntity<?> searchEmployees(@RequestBody EmployeeDto request) {
         return ResponseEntity.ok(employeeService.searchEmployees(request));
     }
+
+    @PostMapping("/detail")
+    public ResponseEntity<?> getEmployeeDetail(@RequestBody EmployeeDto request) {
+        return ResponseEntity.ok(employeeService.getEmployeeDetail(request));
+    }
+
+    @PostMapping("/all")
+    public ResponseEntity<?> getAllEmployees() {
+        return ResponseEntity.ok(employeeService.getAllEmployees());
+    }
 } 

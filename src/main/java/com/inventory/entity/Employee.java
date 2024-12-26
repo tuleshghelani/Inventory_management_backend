@@ -34,9 +34,6 @@ public class Employee {
     @Column(name = "department", length = 100)
     private String department;
     
-    @Column(name = "joining_date")
-    private OffsetDateTime joiningDate;
-    
     @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
     

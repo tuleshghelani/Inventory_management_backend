@@ -1,6 +1,7 @@
 package com.inventory.dao;
 
 import com.inventory.dto.EmployeeDto;
+import com.inventory.exception.ValidationException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -34,7 +35,7 @@ public class EmployeeDao {
             SELECT 
                 e.id, e.name, e.mobile_number, e.email,
                 e.address, e.designation, e.department,
-                e.joining_date, e.status, e.created_at
+                e.status, e.created_at
             FROM employee e
             WHERE 1=1
         """);
@@ -82,9 +83,8 @@ public class EmployeeDao {
             employee.put("address", row[4]);
             employee.put("designation", row[5]);
             employee.put("department", row[6]);
-            employee.put("joiningDate", row[7]);
-            employee.put("status", row[8]);
-            employee.put("createdAt", row[9]);
+            employee.put("status", row[7]);
+            employee.put("createdAt", row[8]);
             employees.add(employee);
         }
 
@@ -94,5 +94,65 @@ public class EmployeeDao {
         response.put("totalPages", (int) Math.ceil((double) totalRecords / pageSize));
 
         return response;
+    }
+
+    public Map<String, Object> getEmployeeDetail(Long employeeId) {
+        String query = """
+            SELECT 
+                e.id,
+                e.name,
+                e.mobile_number,
+                e.email,
+                e.address,
+                e.designation,
+                e.department,
+                e.status
+            FROM employee e
+            WHERE e.id = :employeeId
+        """;
+        
+        Query nativeQuery = entityManager.createNativeQuery(query);
+        nativeQuery.setParameter("employeeId", employeeId);
+        
+        Object[] result = (Object[]) nativeQuery.getSingleResult();
+        
+        if (result == null) {
+            throw new ValidationException("Employee not found");
+        }
+        
+        Map<String, Object> employee = new HashMap<>();
+        employee.put("id", result[0]);
+        employee.put("name", result[1]);
+        employee.put("mobileNumber", result[2]);
+        employee.put("email", result[3]);
+        employee.put("address", result[4]);
+        employee.put("designation", result[5]);
+        employee.put("department", result[6]);
+        employee.put("status", result[7]);
+        
+        return employee;
+    }
+
+    public List<Map<String, Object>> getAllEmployees() {
+        String query = """
+            SELECT 
+                e.id,
+                e.name
+            FROM employee e
+            WHERE e.status = 'A'
+            ORDER BY e.name ASC
+        """;
+        
+        List<Object[]> results = entityManager.createNativeQuery(query).getResultList();
+        List<Map<String, Object>> employees = new ArrayList<>();
+        
+        for (Object[] row : results) {
+            Map<String, Object> employee = new HashMap<>();
+            employee.put("id", row[0]);
+            employee.put("name", row[1]);
+            employees.add(employee);
+        }
+        
+        return employees;
     }
 } 

@@ -23,10 +23,6 @@ public class EmployeeDto {
     private String department;
     private String status;
     
-    @JsonDeserialize(using = CustomDateDeserializer.class)
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
-    private OffsetDateTime joiningDate;
-    
     // Search and pagination parameters
     private String search;
     private Integer page = 0;
