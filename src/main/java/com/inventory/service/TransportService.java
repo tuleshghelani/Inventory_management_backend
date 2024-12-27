@@ -58,6 +58,7 @@ public class TransportService {
                 }
                 saleRepository.deleteByTransportId(transport.getId());
                 purchaseRepository.deleteByTransportId(transport.getId());
+                transportItemRepository.deleteByTransportId(transport.getId());
                 transportBagRepository.deleteByTransportId(transport.getId());
                 
             } else {
@@ -169,10 +170,10 @@ public class TransportService {
                 dailyProfitRepository.deleteBySaleId(sale.getId());
             }
             
-            // Delete associated records
-            transportBagRepository.deleteByTransportId(id);
             saleRepository.deleteByTransportId(id);
             purchaseRepository.deleteByTransportId(id);
+            transportItemRepository.deleteByTransportId(id);
+            transportBagRepository.deleteByTransportId(id);
             
             // Delete transport
             transportRepository.delete(transport);
