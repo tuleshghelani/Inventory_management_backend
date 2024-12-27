@@ -1,11 +1,24 @@
 package com.inventory.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Data
 @Entity
@@ -17,6 +30,9 @@ import java.math.BigDecimal;
     @Index(name = "idx_sale_invoice_number", columnList = "invoice_number"),
     @Index(name = "idx_sale_sale_date", columnList = "sale_date"),
     @Index(name = "idx_sale_purchase_id", columnList = "purchase_id"),
+    @Index(name = "idx_sale_customer_id", columnList = "customer_id"),
+    @Index(name = "idx_sale_transport_id", columnList = "transport_id"),
+    @Index(name = "idx_sale_transport_item_id", columnList = "transport_item_id"),
 })
 public class Sale {
     @Id
