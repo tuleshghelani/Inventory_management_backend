@@ -3,6 +3,7 @@ package com.inventory.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
@@ -42,6 +43,12 @@ public class PowderCoatingProcess {
 
     @Column(name = "remarks", columnDefinition = "varchar")
     private String remarks;
+
+    @Column(name = "unit_price", precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+
+    @Column(name = "total_amount", precision = 12, scale = 2)
+    private BigDecimal totalAmount;
     
     @Column(name = "created_at", length = 29, 
         columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")

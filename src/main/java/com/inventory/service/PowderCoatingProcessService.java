@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.HashMap;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,10 @@ public class PowderCoatingProcessService {
             
             process.setQuantity(dto.getQuantity());
             process.setRemainingQuantity(dto.getQuantity());
+            process.setTotalBags(dto.getTotalBags());
+            process.setUnitPrice(dto.getUnitPrice());
+            process.setTotalAmount(dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity())));
+            process.setRemarks(dto.getRemarks());
             process.setCreatedBy(utilityService.getCurrentLoggedInUser());
             process.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
             
@@ -63,10 +68,26 @@ public class PowderCoatingProcessService {
             process.setProduct(productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ValidationException("Product not found")));
             
+            // Calculate total returned quantity
+            Integer totalReturnedQuantity = returnRepository.findByProcessId(id)
+                .stream()
+                .map(PowderCoatingReturn::getReturnQuantity)
+                .reduce(0, Integer::sum);
+            
             process.setQuantity(dto.getQuantity());
-            process.setRemainingQuantity(dto.getQuantity());
+            process.setRemainingQuantity(dto.getQuantity() - totalReturnedQuantity);
+            process.setTotalBags(dto.getTotalBags());
+            process.setUnitPrice(dto.getUnitPrice());
+            process.setTotalAmount(dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity())));
+            process.setRemarks(dto.getRemarks());
             process.setUpdatedAt(OffsetDateTime.now());
-            process.setStatus(dto.getStatus());
+            
+            // Update status based on remaining quantity
+            if (process.getRemainingQuantity() <= 0) {
+                process.setStatus("C");
+            } else {
+                process.setStatus(dto.getStatus() != null ? dto.getStatus() : process.getStatus());
+            }
             
             processRepository.save(process);
             return ApiResponse.success("Process updated successfully");
@@ -147,6 +168,13 @@ public class PowderCoatingProcessService {
         if (dto.getQuantity() == null || dto.getQuantity() <= 0) {
             throw new ValidationException("Valid quantity is required");
         }
+        if (dto.getTotalBags() == null || dto.getTotalBags() <= 0) {
+            throw new ValidationException("Total bags must be greater than 0");
+        }
+        if (dto.getUnitPrice() == null || dto.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException("Unit price must be greater than 0");
+        }
+        dto.setTotalAmount(dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getTotalBags())));
     }
 
     private PowderCoatingProcessDto mapToDto(PowderCoatingProcess process) {
@@ -179,9 +207,13 @@ public class PowderCoatingProcessService {
             processDetails.put("quantity", process.getQuantity());
             processDetails.put("remainingQuantity", process.getRemainingQuantity());
             processDetails.put("status", process.getStatus());
+            processDetails.put("unitPrice", process.getUnitPrice());
+            processDetails.put("totalAmount", process.getTotalAmount());
+            processDetails.put("totalBags", process.getTotalBags());
+            processDetails.put("remarks", process.getRemarks());
+            processDetails.put("createdAt", process.getCreatedAt());
             processDetails.put("customerName", process.getCustomer().getName());
             processDetails.put("productName", process.getProduct().getName());
-            processDetails.put("createdAt", process.getCreatedAt());
             
             return ApiResponse.success("Process retrieved successfully", processDetails);
         } catch (ValidationException e) {
@@ -189,5 +221,11 @@ public class PowderCoatingProcessService {
         } catch (Exception e) {
             throw new ValidationException("Failed to retrieve process: " + e.getMessage());
         }
+    }
+
+    private void mapDtoToEntity(PowderCoatingProcessDto dto, PowderCoatingProcess process) {
+        process.setTotalBags(dto.getTotalBags());
+        process.setUnitPrice(dto.getUnitPrice());
+        process.setTotalAmount(dto.getTotalAmount());
     }
 } 

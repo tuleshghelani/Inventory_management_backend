@@ -46,10 +46,12 @@ public class PowderCoatingProcessDao {
                 pcp.remarks,
                 pcp.created_at,
                 pcp.status,
-                c.name as customer_name,
-                p.name as product_name,
                 c.id as customer_id,
-                p.id as product_id
+                c.name as customer_name,
+                p.id as product_id,
+                p.name as product_name,
+                pcp.unit_price,
+                pcp.total_amount
             FROM powder_coating_process pcp
             LEFT JOIN customer c ON pcp.customer_id = c.id
             LEFT JOIN product p ON pcp.product_id = p.id
@@ -119,6 +121,8 @@ public class PowderCoatingProcessDao {
             process.put("customerName", row[8]);
             process.put("productId", row[9]);
             process.put("productName", row[10]);
+            process.put("unitPrice", row[11]);
+            process.put("totalAmount", row[12]);
             processes.add(process);
         }
 
@@ -128,5 +132,50 @@ public class PowderCoatingProcessDao {
         response.put("totalPages", (int) Math.ceil((double) totalRecords / dto.getPerPageRecord()));
 
         return response;
+    }
+
+    public Map<String, Object> getProcess(Long id) {
+        String query = """
+            SELECT 
+                pcp.id,
+                pcp.quantity,
+                pcp.remaining_quantity,
+                pcp.total_bags,
+                pcp.remarks,
+                pcp.created_at,
+                pcp.status,
+                pcp.customer_id,
+                c.name as customer_name,
+                pcp.product_id,
+                p.name as product_name,
+                pcp.unit_price,
+                pcp.total_amount
+            FROM powder_coating_process pcp
+            LEFT JOIN customer c ON c.id = pcp.customer_id
+            LEFT JOIN product p ON p.id = pcp.product_id
+            WHERE pcp.id = :id
+        """;
+
+        Query nativeQuery = entityManager.createNativeQuery(query);
+        nativeQuery.setParameter("id", id);
+        
+        Object[] result = (Object[]) nativeQuery.getSingleResult();
+        
+        Map<String, Object> process = new HashMap<>();
+        process.put("id", result[0]);
+        process.put("quantity", result[1]);
+        process.put("remainingQuantity", result[2]);
+        process.put("totalBags", result[3]);
+        process.put("remarks", result[4]);
+        process.put("createdAt", result[5]);
+        process.put("status", result[6]);
+        process.put("customerId", result[7]);
+        process.put("customerName", result[8]);
+        process.put("productId", result[9]);
+        process.put("productName", result[10]);
+        process.put("unitPrice", result[11]);
+        process.put("totalAmount", result[12]);
+        
+        return process;
     }
 } 
