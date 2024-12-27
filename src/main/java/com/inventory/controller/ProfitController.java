@@ -1,39 +1,44 @@
-
 package com.inventory.controller;
 
 import com.inventory.dao.ProfitDao;
+import com.inventory.dto.ApiResponse;
+import com.inventory.dto.ProfitRequestDto;
+import com.inventory.exception.ValidationException;
+import com.inventory.service.ProfitService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profits")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class ProfitController {
-    private final ProfitDao profitDao;
+    private final ProfitService profitService;
+    private final Logger logger = LoggerFactory.getLogger(ProfitController.class);
 
-    @GetMapping("/daily")
-    public ResponseEntity<?> getDailyProfits(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return ResponseEntity.ok(profitDao.getDailyProfitSummary(
-            startDate.atStartOfDay().atOffset(ZoneOffset.UTC),
-            endDate.atTime(23, 59, 59).atOffset(ZoneOffset.UTC)
-        ));
+    @PostMapping("/daily")
+    public ResponseEntity<ApiResponse<?>> getDailyProfits(@RequestBody ProfitRequestDto request) {
+        try {
+            logger.info("Received daily profits request for dates: {} to {}", request.getStartDate(), request.getEndDate());
+            Map<String, Object> result = profitService.getDailyProfits(request);
+            return ResponseEntity.ok(ApiResponse.success("Daily profits retrieved successfully", result));
+        } catch (ValidationException ve) {
+            logger.error("Validation error in getDailyProfits: {}", ve.getMessage());
+            return ResponseEntity.badRequest().body(ApiResponse.error(ve.getMessage()));
+        } catch (Exception e) {
+            logger.error("Error in getDailyProfits: ", e);
+            return ResponseEntity.internalServerError()
+                .body(ApiResponse.error("An unexpected error occurred. Please try again later."));
+        }
     }
 
-    @GetMapping("/products")
-    public ResponseEntity<?> getProductWiseProfits(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return ResponseEntity.ok(profitDao.getProductWiseProfitSummary(
-            startDate.atStartOfDay().atOffset(ZoneOffset.UTC),
-            endDate.atTime(23, 59, 59).atOffset(ZoneOffset.UTC)
-        ));
+    @PostMapping("/products")
+    public ResponseEntity<?> getProductWiseProfits(@RequestBody ProfitRequestDto request) {
+        return ResponseEntity.ok(profitService.getProductWiseProfits(request));
     }
 }

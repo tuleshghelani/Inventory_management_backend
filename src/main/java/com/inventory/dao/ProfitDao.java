@@ -1,20 +1,23 @@
 package com.inventory.dao;
 
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
-import org.springframework.stereotype.Repository;
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
 
 @Repository
 public class ProfitDao {
     @PersistenceContext
     private EntityManager entityManager;
     
-    public List<Map<String, Object>> getDailyProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate) {
+    public Map<String, Object> getDailyProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate) {
         String sql = """
             SELECT 
                 DATE(dp.profit_date) as date,
@@ -31,12 +34,30 @@ public class ProfitDao {
         query.setParameter("startDate", startDate);
         query.setParameter("endDate", endDate);
         
-        return query.getResultList();
+        List<Object[]> results = query.getResultList();
+        
+        // Transform results
+        List<Map<String, Object>> profits = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> profit = new HashMap<>();
+            profit.put("date", row[0]);
+            profit.put("grossProfit", row[1]);
+            profit.put("totalExpenses", row[2]);
+            profit.put("netProfit", row[3]);
+            profits.add(profit);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", profits);
+        response.put("totalElements", profits.size());
+        
+        return response;
     }
     
-    public List<Map<String, Object>> getProductWiseProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate) {
+    public Map<String, Object> getProductWiseProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate) {
         String sql = """
             SELECT 
+                p.id as product_id,
                 p.name as product_name,
                 SUM(dp.gross_profit) as gross_profit,
                 SUM(dp.other_expenses) as total_expenses,
@@ -54,6 +75,24 @@ public class ProfitDao {
         query.setParameter("startDate", startDate);
         query.setParameter("endDate", endDate);
         
-        return query.getResultList();
+        List<Object[]> results = query.getResultList();
+        
+        // Transform results
+        List<Map<String, Object>> profits = new ArrayList<>();
+        for (Object[] row : results) {
+            Map<String, Object> profit = new HashMap<>();
+            profit.put("productId", row[0]);
+            profit.put("productName", row[1]);
+            profit.put("grossProfit", row[2]);
+            profit.put("totalExpenses", row[3]);
+            profit.put("netProfit", row[4]);
+            profits.add(profit);
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", profits);
+        response.put("totalElements", profits.size());
+        
+        return response;
     }
 }
