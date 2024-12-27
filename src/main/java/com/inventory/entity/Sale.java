@@ -67,4 +67,8 @@ public class Sale {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_transport_id_transport_id"))
     private Transport transport;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transport_item_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_transport_item_id_transport_item_id"))
+    private TransportItem transportItem;
 }

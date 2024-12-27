@@ -132,27 +132,47 @@ public class TransportDao {
             SELECT 
                 b.id,
                 b.weight,
-                b.items
+                ti.id as item_id,
+                ti.product_id,
+                p.name as product_name,
+                ti.quantity,
+                ti.remarks
             FROM transport_bag b
+            LEFT JOIN transport_items ti ON ti.transport_bag_id = b.id
+            LEFT JOIN product p ON p.id = ti.product_id
             WHERE b.transport_id = :transportId
-            order by b.id 
+            ORDER BY b.id, ti.id
         """;
         
         Query bagNativeQuery = entityManager.createNativeQuery(bagQuery);
         bagNativeQuery.setParameter("transportId", transportId);
         
         List<Object[]> bagResults = bagNativeQuery.getResultList();
-        List<Map<String, Object>> bags = new ArrayList<>();
+        Map<Long, Map<String, Object>> bagsMap = new HashMap<>();
         
         for (Object[] bagRow : bagResults) {
-            Map<String, Object> bag = new HashMap<>();
-            bag.put("id", bagRow[0]);
-            bag.put("weight", bagRow[1]);
-            bag.put("items", bagRow[2]); // JSONB column will be automatically converted
-            bags.add(bag);
+            Long bagId = ((Number) bagRow[0]).longValue();
+            
+            Map<String, Object> bag = bagsMap.computeIfAbsent(bagId, k -> {
+                Map<String, Object> newBag = new HashMap<>();
+                newBag.put("id", bagRow[0]);
+                newBag.put("weight", bagRow[1]);
+                newBag.put("items", new ArrayList<>());
+                return newBag;
+            });
+            
+            if (bagRow[2] != null) {  // If there are items
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", bagRow[2]);
+                item.put("productId", bagRow[3]);
+                item.put("productName", bagRow[4]);
+                item.put("quantity", bagRow[5]);
+                item.put("remarks", bagRow[6]);
+                ((List<Map<String, Object>>) bag.get("items")).add(item);
+            }
         }
         
-        transport.put("bags", bags);
+        transport.put("bags", new ArrayList<>(bagsMap.values()));
         return transport;
     }
 } 

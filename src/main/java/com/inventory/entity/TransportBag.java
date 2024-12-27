@@ -27,10 +27,6 @@ public class TransportBag {
     @Column(name = "weight", nullable = false, precision = 10, scale = 3)
     private BigDecimal weight;
     
-    @Type(JsonType.class)
-    @Column(name = "items", columnDefinition = "jsonb")
-    private List<Map<String, Object>> items;
-    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_id", nullable = false, referencedColumnName = "id", 
         foreignKey = @ForeignKey(name = "fk_transport_bag_transport_id_transport_id"))

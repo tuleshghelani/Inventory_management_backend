@@ -6,13 +6,7 @@ import com.inventory.dto.ApiResponse;
 import com.inventory.dto.TransportDto;
 import com.inventory.entity.*;
 import com.inventory.exception.ValidationException;
-import com.inventory.repository.CustomerRepository;
-import com.inventory.repository.ProductRepository;
-import com.inventory.repository.TransportBagRepository;
-import com.inventory.repository.TransportRepository;
-import com.inventory.repository.PurchaseRepository;
-import com.inventory.repository.SaleRepository;
-import com.inventory.repository.DailyProfitRepository;
+import com.inventory.repository.*;
 import com.inventory.service.UtilityService;
 import com.inventory.util.DiscountCalculator;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +34,8 @@ public class TransportService {
     private final PurchaseRepository purchaseRepository;
     private final SaleRepository saleRepository;
     private final DailyProfitRepository dailyProfitRepository;
-    
+    private final TransportItemRepository transportItemRepository;
+
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<?> create(TransportDto dto) {
         try {
@@ -232,21 +227,30 @@ public class TransportService {
             TransportBag bag = new TransportBag();
             bag.setTransport(transport);
             bag.setWeight(bagDto.getWeight());
-            bag.setItems(convertItemsToJsonFormat(bagDto.getItems()));
-            transportBagRepository.save(bag);
+            bag = transportBagRepository.save(bag);
             
-            // Create purchase and sale entries for each item
-            for (TransportDto.BagItemDto item : bagDto.getItems()) {
-                createPurchaseAndSaleEntries(item, transport);
-            }
-            
-            if (++count % batchSize == 0) {
-                transportBagRepository.flush();
+            // Save items
+            for (TransportDto.BagItemDto itemDto : bagDto.getItems()) {
+                TransportItem item = new TransportItem();
+                item.setTransport(transport);
+                item.setTransportBag(bag);
+                item.setProduct(productRepository.findById(itemDto.getProductId())
+                    .orElseThrow(() -> new ValidationException("Product not found")));
+                item.setQuantity(itemDto.getQuantity());
+                item.setRemarks(itemDto.getRemarks());
+                item = transportItemRepository.save(item);
+                
+                // Create purchase and sale entries
+                createPurchaseAndSaleEntries(itemDto, transport, item);
+                
+                if (++count % batchSize == 0) {
+                    transportItemRepository.flush();
+                }
             }
         }
     }
 
-    private void createPurchaseAndSaleEntries(TransportDto.BagItemDto item, Transport transport) {
+    private void createPurchaseAndSaleEntries(TransportDto.BagItemDto item, Transport transport, TransportItem transportItem) {
         // Create purchase
         Purchase purchase = new Purchase();
         Optional<Product> product = productRepository.findById(item.getProductId());
@@ -266,6 +270,7 @@ public class TransportService {
         purchase.setCreatedBy(transport.getCreatedBy());
         purchase.setOtherExpenses(BigDecimal.ZERO);
         purchase.setCategory(product.get().getCategory());
+        purchase.setTransportItem(transportItem);
         purchase = purchaseRepository.save(purchase);
         
         // Create sale
@@ -281,7 +286,7 @@ public class TransportService {
         sale.setTransport(transport);
         sale.setCreatedBy(transport.getCreatedBy());
         sale.setOtherExpenses(BigDecimal.ZERO);
-        
+        sale.setTransportItem(transportItem);
         sale = saleRepository.save(sale);
         
         // Create daily profit
