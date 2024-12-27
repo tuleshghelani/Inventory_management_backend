@@ -10,4 +10,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     List<Sale> findBySaleDateBetween(OffsetDateTime startDate, OffsetDateTime endDate);
     List<Sale> findByPurchaseId(Long purchaseId);
     Optional<Sale> findByInvoiceNumber(String invoiceNumber);
+    void deleteByTransportId(Long transportId);
+    List<Sale> findByTransportId(Long transportId);
 }

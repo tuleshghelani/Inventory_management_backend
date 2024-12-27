@@ -1,11 +1,16 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.time.OffsetDateTime;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "category", uniqueConstraints={
         @UniqueConstraint( name = "uk_category_name",  columnNames ={"name"})
 }, indexes = {

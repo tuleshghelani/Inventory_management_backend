@@ -1,12 +1,17 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "daily_profit",
     indexes = {
         @Index(name = "idx_daily_sale_id", columnList = "sale_id"),

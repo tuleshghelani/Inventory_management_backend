@@ -2,7 +2,7 @@ package com.inventory.entity;
 
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.Type;
 
 import java.time.OffsetDateTime;
@@ -12,6 +12,10 @@ import java.util.Map;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "transport_bag", indexes = {
     @Index(name = "idx_transport_bag_transport_id", columnList = "transport_id")
 })

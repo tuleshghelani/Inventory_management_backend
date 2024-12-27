@@ -42,6 +42,8 @@ public class PowderCoatingProcessDao {
                 pcp.id,
                 pcp.quantity,
                 pcp.remaining_quantity,
+                pcp.total_bags,
+                pcp.remarks,
                 pcp.created_at,
                 pcp.status,
                 c.name as customer_name,
@@ -109,12 +111,14 @@ public class PowderCoatingProcessDao {
             process.put("id", row[0]);
             process.put("quantity", row[1]);
             process.put("remainingQuantity", row[2]);
-            process.put("createdAt", row[3]);
-            process.put("status", row[4]);
-            process.put("customerName", row[5]);
-            process.put("productName", row[6]);
+            process.put("totalBags", row[3]);
+            process.put("remarks", row[4]);
+            process.put("createdAt", row[5]);
+            process.put("status", row[6]);
             process.put("customerId", row[7]);
-            process.put("productId", row[8]);
+            process.put("customerName", row[8]);
+            process.put("productId", row[9]);
+            process.put("productName", row[10]);
             processes.add(process);
         }
 

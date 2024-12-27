@@ -1,12 +1,17 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "product", 
     uniqueConstraints = {
         @UniqueConstraint(name = "uk_product_category_name", columnNames = {"category_id", "name"})

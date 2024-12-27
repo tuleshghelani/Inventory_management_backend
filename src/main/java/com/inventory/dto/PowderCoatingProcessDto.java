@@ -19,23 +19,32 @@ public class PowderCoatingProcessDto {
     private Long productId;
     private Integer quantity;
     private Integer remainingQuantity;
-    private String status;
     private String customerName;
     private String productName;
-    
-    @JsonDeserialize(using = CustomDateDeserializer.class)
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
-    private OffsetDateTime createdAt;
-    
+    private Integer totalBags;
+    private String remarks;
+    private String status;
+    private Integer returnQuantity;
+
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime returnDate;
-    
-    // Search and pagination parameters
+
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime createdAt;
+    // Search parameters
     private String search;
     private Integer currentPage = 0;
     private Integer perPageRecord = 10;
     private String sortBy = "id";
     private String sortDir = "desc";
-    private Integer returnQuantity;
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime startDate;
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime endDate;
 } 

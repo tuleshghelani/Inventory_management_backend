@@ -37,6 +37,8 @@ public class TransportDto {
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime endDate;
+    private Integer totalBags;
+    private BigDecimal weight;
     
     @Data
     @Getter
@@ -56,5 +58,17 @@ public class TransportDto {
         private Long productId;
         private Integer quantity;
         private String remarks;
+        
+        // Purchase related fields
+        private BigDecimal purchaseUnitPrice;
+        private BigDecimal purchaseDiscount;
+        private BigDecimal purchaseDiscountAmount;
+        private BigDecimal purchaseDiscountPrice;
+        
+        // Sale related fields
+        private BigDecimal saleUnitPrice;
+        private BigDecimal saleDiscount;
+        private BigDecimal saleDiscountAmount;
+        private BigDecimal saleDiscountPrice;
     }
 } 

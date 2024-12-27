@@ -1,12 +1,18 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "purchase", indexes = {
     @Index(name = "idx_purchase_invoice_number", columnList = "invoice_number"),
     @Index(name = "idx_purchase_purchase_date", columnList = "purchase_date"),
@@ -49,7 +55,7 @@ public class Purchase {
     @JoinColumn(name = "created_by", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_purchase_created_by_user_master_id"))
     private UserMaster createdBy;
     
-    @Column(name = "invoice_number", nullable = false)
+    @Column(name = "invoice_number")
     private String invoiceNumber;
     
     @Column(name = "other_expenses", precision = 10, scale = 2)
@@ -66,4 +72,8 @@ public class Purchase {
     
     @Column(name = "discount_price", precision = 10, scale = 2)
     private BigDecimal discountPrice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "transport_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_purchase_transport_id_transport_id"))
+    private Transport transport;
 }

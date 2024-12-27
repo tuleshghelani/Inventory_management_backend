@@ -92,12 +92,12 @@ public class SaleService {
                 .orElseThrow(() -> new ValidationException("Sale not found"));
                 
             // Check if new invoice number is unique (if changed)
-            if (!existingSale.getInvoiceNumber().equals(dto.getInvoiceNumber().trim())) {
-                Optional<Sale> saleWithInvoice = saleRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
-                if (saleWithInvoice.isPresent()) {
-                    throw new ValidationException("Invoice number already exists");
-                }
-            }
+//            if (!existingSale.getInvoiceNumber().equals(dto.getInvoiceNumber().trim())) {
+//                Optional<Sale> saleWithInvoice = saleRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
+//                if (saleWithInvoice.isPresent()) {
+//                    throw new ValidationException("Invoice number already exists");
+//                }
+//            }
 
             // Restore old purchase quantity before updating
             Purchase oldPurchase = existingSale.getPurchase();

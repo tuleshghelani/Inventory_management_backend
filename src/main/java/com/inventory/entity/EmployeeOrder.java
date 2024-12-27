@@ -1,12 +1,17 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "employee_orders", indexes = {
     @Index(name = "idx_employee_orders_product_id", columnList = "product_id"),
     @Index(name = "idx_employee_orders_status", columnList = "status"),

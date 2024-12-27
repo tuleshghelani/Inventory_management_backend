@@ -9,4 +9,5 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
     List<Purchase> findByProductId(Long productId);
     List<Purchase> findByRemainingQuantityGreaterThan(Integer quantity);
     Optional<Purchase> findByInvoiceNumber(String invoiceNumber);
+    void deleteByTransportId(Long transportId);
 }

@@ -1,11 +1,16 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.time.OffsetDateTime;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "employee", indexes = {
     @Index(name = "idx_employee_name", columnList = "name"),
     @Index(name = "idx_employee_mobile", columnList = "mobile_number"),
