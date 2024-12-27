@@ -261,6 +261,7 @@ public class TransportService {
         purchase.setProduct(product.get());
         purchase.setQuantity(item.getQuantity());
         purchase.setUnitPrice(item.getPurchaseUnitPrice());
+        purchase.setCustomer(transport.getCustomer()); // Set customer from transport
         
         // Calculate purchase amounts with discount
         calculatePurchaseAmounts(purchase, item);
@@ -279,6 +280,7 @@ public class TransportService {
         sale.setPurchase(purchase);
         sale.setQuantity(item.getQuantity());
         sale.setUnitPrice(item.getSaleUnitPrice());
+        sale.setCustomer(transport.getCustomer()); // Set customer from transport
         
         // Calculate sale amounts with discount
         calculateSaleAmounts(sale, item);

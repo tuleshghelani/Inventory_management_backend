@@ -63,6 +63,11 @@ public class Sale {
     
     @Column(name = "discount_price", precision = 10, scale = 2)
     private BigDecimal discountPrice;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", referencedColumnName = "id", 
+        foreignKey = @ForeignKey(name = "fk_sale_customer_id_customer_id"))
+    private Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_transport_id_transport_id"))
