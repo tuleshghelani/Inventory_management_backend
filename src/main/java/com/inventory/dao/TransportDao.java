@@ -270,4 +270,90 @@ public class TransportDao {
             default -> "t." + sortBy;
         };
     }
+
+    public Map<String, Object> getTransportPdfData(Long transportId) {
+        String query = """
+            SELECT 
+                t.id,
+                t.created_at as createdAt,
+                t.total_weight as totalWeight,
+                t.total_bags as totalBags,
+                c.id as customerId,
+                c.name as customerName,
+                c.address as customerAddress,
+                c.mobile as customerMobile,
+                c.gst as customerGst
+            FROM transport t
+            LEFT JOIN customer c ON t.customer_id = c.id
+            WHERE t.id = :transportId
+        """;
+        
+        Query nativeQuery = entityManager.createNativeQuery(query);
+        nativeQuery.setParameter("transportId", transportId);
+        
+        Object[] result = (Object[]) nativeQuery.getSingleResult();
+        
+        if (result == null) {
+            throw new ValidationException("Transport not found");
+        }
+        
+        Map<String, Object> transport = new HashMap<>();
+        transport.put("id", result[0]);
+        transport.put("createdAt", result[1]);
+        transport.put("totalWeight", result[2]);
+        transport.put("totalBags", result[3]);
+        transport.put("customerName", result[5]);
+        transport.put("customerAddress", result[6]);
+        transport.put("customerMobile", result[7]);
+        transport.put("customerGst", result[8]);
+
+        // Get bags with items
+        String bagQuery = """
+            SELECT 
+                b.id as bag_id,
+                b.weight as bag_weight,
+                ti.id as item_id,
+                p.id as product_id,
+                p.name as product_name,
+                ti.quantity,
+                ti.remarks
+            FROM transport_bag b
+            LEFT JOIN transport_items ti ON ti.transport_bag_id = b.id
+            LEFT JOIN product p ON ti.product_id = p.id
+            WHERE b.transport_id = :transportId
+            ORDER BY b.id, ti.id
+        """;
+        
+        Query bagNativeQuery = entityManager.createNativeQuery(bagQuery);
+        bagNativeQuery.setParameter("transportId", transportId);
+        
+        List<Object[]> bagResults = bagNativeQuery.getResultList();
+        Map<Long, Map<String, Object>> bagsMap = new HashMap<>();
+        
+        for (Object[] row : bagResults) {
+            Long bagId = ((Number) row[0]).longValue();
+            
+            Map<String, Object> bag = bagsMap.computeIfAbsent(bagId, k -> {
+                Map<String, Object> newBag = new HashMap<>();
+                newBag.put("id", row[0]);
+                newBag.put("weight", row[1]);
+                newBag.put("items", new ArrayList<>());
+                return newBag;
+            });
+            
+            if (row[2] != null) {  // If there are items
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", row[2]);
+                item.put("productId", row[3]);
+                item.put("productName", row[4]);
+                item.put("quantity", row[5]);
+                item.put("remarks", row[6]);
+                
+                ((List<Map<String, Object>>) bag.get("items")).add(item);
+            }
+        }
+        
+        transport.put("bags", new ArrayList<>(bagsMap.values()));
+        return transport;
+    }
 } 

@@ -96,15 +96,13 @@ public class PdfGenerationService {
     }
 
     private void addProcessTable(Document document, List<PowderCoatingProcess> processes) throws DocumentException {
-        PdfPTable table = new PdfPTable(6);
+        PdfPTable table = new PdfPTable(7);
         table.setWidthPercentage(100);
         
-        // Set relative column widths
-        float[] columnWidths = new float[]{5f, 40f, 12f, 15f, 13f, 15f};
+        float[] columnWidths = new float[]{5f, 35f, 12f, 12f, 12f, 12f, 12f};
         table.setWidths(columnWidths);
         
-        // Add headers with styling
-        Stream.of("No.", "Particulars", "Total Quantity", "Remaining Quantity", "Unit Price", "Total Amount")
+        Stream.of("No.", "Particulars", "Total Quantity", "Total Bags", "Unit Price", "Total Amount", "Remarks")
             .forEach(header -> {
                 PdfPCell cell = new PdfPCell(new Phrase(header, new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD)));
                 cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -113,36 +111,32 @@ public class PdfGenerationService {
                 table.addCell(cell);
             });
         
-        // Add data with null checks
         AtomicInteger rowNum = new AtomicInteger(1);
         AtomicInteger totalQuantity = new AtomicInteger(0);
-        AtomicInteger totalRemaining = new AtomicInteger(0);
+        AtomicInteger totalBagsSum = new AtomicInteger(0);
         
         processes.forEach(process -> {
-            // Serial number - center aligned
             PdfPCell noCell = new PdfPCell(new Phrase(String.valueOf(rowNum.getAndIncrement())));
             noCell.setHorizontalAlignment(Element.ALIGN_CENTER);
             table.addCell(noCell);
             
-            // Particulars - left aligned
             PdfPCell particularCell = new PdfPCell(new Phrase(process.getProduct() != null ? process.getProduct().getName() : "N/A"));
             particularCell.setHorizontalAlignment(Element.ALIGN_LEFT);
             table.addCell(particularCell);
             
             int quantity = process.getQuantity() != null ? process.getQuantity() : 0;
-            int remaining = process.getRemainingQuantity() != null ? process.getRemainingQuantity() : 0;
+            int totalBags = process.getTotalBags() != null ? process.getTotalBags() : 0;
             
             totalQuantity.addAndGet(quantity);
-            totalRemaining.addAndGet(remaining);
+            totalBagsSum.addAndGet(totalBags);
             
-            // Numbers - right aligned
             PdfPCell quantityCell = new PdfPCell(new Phrase(String.valueOf(quantity)));
             quantityCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             table.addCell(quantityCell);
             
-            PdfPCell remainingCell = new PdfPCell(new Phrase(String.valueOf(remaining)));
-            remainingCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            table.addCell(remainingCell);
+            PdfPCell bagsCell = new PdfPCell(new Phrase(String.valueOf(totalBags)));
+            bagsCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            table.addCell(bagsCell);
             
             PdfPCell priceCell = new PdfPCell(new Phrase(process.getUnitPrice() != null ? process.getUnitPrice().toString() : "0.00"));
             priceCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -151,9 +145,12 @@ public class PdfGenerationService {
             PdfPCell amountCell = new PdfPCell(new Phrase(process.getTotalAmount() != null ? process.getTotalAmount().toString() : "0.00"));
             amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             table.addCell(amountCell);
+            
+            PdfPCell remarksCell = new PdfPCell(new Phrase(process.getRemarks() != null ? process.getRemarks() : ""));
+            remarksCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+            table.addCell(remarksCell);
         });
         
-        // Add totals row with styling
         Font boldFont = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD);
         table.addCell("");
         
@@ -165,10 +162,11 @@ public class PdfGenerationService {
         totalQuantityCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         table.addCell(totalQuantityCell);
         
-        PdfPCell totalRemainingCell = new PdfPCell(new Phrase(String.valueOf(totalRemaining.get()), boldFont));
-        totalRemainingCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        table.addCell(totalRemainingCell);
+        PdfPCell totalBagsCell = new PdfPCell(new Phrase(String.valueOf(totalBagsSum.get()), boldFont));
+        totalBagsCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        table.addCell(totalBagsCell);
         
+        table.addCell("");
         table.addCell("");
         table.addCell("");
         

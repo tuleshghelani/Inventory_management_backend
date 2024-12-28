@@ -171,7 +171,7 @@ public class PowderCoatingProcessService {
         if (dto.getTotalBags() == null || dto.getTotalBags() <= 0) {
             throw new ValidationException("Total bags must be greater than 0");
         }
-        if (dto.getUnitPrice() == null || dto.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+        if (dto.getUnitPrice() == null || dto.getUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("Unit price must be greater than 0");
         }
         dto.setTotalAmount(dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getTotalBags())));

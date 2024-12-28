@@ -20,16 +20,9 @@ public class PriceDao {
     public Map<String, Object> getLastPrices(Long productId, Long customerId) {
         String query = """
             SELECT 
-                COALESCE(p.unit_price, 0) as last_purchase_price,
+                COALESCE(p.purchase_amount, 0) as last_purchase_price,
                 COALESCE(s.unit_price, 0) as last_sale_price
-            FROM (
-                SELECT unit_price 
-                FROM purchase 
-                WHERE product_id = :productId 
-                AND customer_id = :customerId
-                ORDER BY id DESC 
-                LIMIT 1
-            ) p,
+            FROM (select * from product p where p.id = :productId) p,
             (
                 SELECT s.unit_price 
                 FROM (select * from sale s where s.customer_id = :customerId) s

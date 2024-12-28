@@ -83,6 +83,7 @@ public class PowderCoatingProcessDao {
             }
 
             if (dto.getCustomerId() != null) {
+                
                 sql.append(" AND pcp.customer_id = :customerId");
                 params.put("customerId", dto.getCustomerId());
             }

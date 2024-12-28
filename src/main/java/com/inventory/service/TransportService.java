@@ -115,7 +115,7 @@ public class TransportService {
                     .orElseThrow(() -> new ValidationException("Product not found: " + item.getProductId()));
                 
                 // Validate purchase fields
-                if (item.getPurchaseUnitPrice() == null || item.getPurchaseUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                if (item.getPurchaseUnitPrice() == null || item.getPurchaseUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
                     throw new ValidationException("Valid purchase unit price is required");
                 }
                 if (item.getPurchaseDiscount() != null && 
@@ -124,7 +124,7 @@ public class TransportService {
                 }
                 
                 // Validate sale fields
-                if (item.getSaleUnitPrice() == null || item.getSaleUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                if (item.getSaleUnitPrice() == null || item.getSaleUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
                     throw new ValidationException("Valid sale unit price is required");
                 }
                 if (item.getSaleDiscount() != null && 
@@ -266,7 +266,7 @@ public class TransportService {
         // Calculate purchase amounts with discount
         calculatePurchaseAmounts(purchase, item);
         
-        purchase.setPurchaseDate(OffsetDateTime.now());
+        purchase.setPurchaseDate(transport.getCreatedAt());
         purchase.setTransport(transport);
         purchase.setRemainingQuantity(0); // Since we're creating sale immediately
         purchase.setCreatedBy(transport.getCreatedBy());
@@ -285,7 +285,7 @@ public class TransportService {
         // Calculate sale amounts with discount
         calculateSaleAmounts(sale, item);
         
-        sale.setSaleDate(OffsetDateTime.now());
+        sale.setSaleDate(transport.getCreatedAt());
         sale.setTransport(transport);
         sale.setCreatedBy(transport.getCreatedBy());
         sale.setOtherExpenses(BigDecimal.ZERO);
