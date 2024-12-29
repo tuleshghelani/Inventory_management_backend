@@ -19,19 +19,19 @@ public class PriceDao {
     @Transactional
     public Map<String, Object> getLastPrices(Long productId, Long customerId) {
         String query = """
-            SELECT 
-                COALESCE(p.purchase_amount, 0) as last_purchase_price,
-                COALESCE(s.unit_price, 0) as last_sale_price
-            FROM (select * from product p where p.id = :productId) p,
-            (
-                SELECT s.unit_price 
-                FROM (select * from sale s where s.customer_id = :customerId) s
-                JOIN (select * from purchase p where p.product_id = :productId and p.customer_id = :customerId) p ON s.purchase_id = p.id
-                WHERE p.product_id = :productId 
-                AND s.customer_id = :customerId
-                ORDER BY s.id DESC 
-                LIMIT 1
-            ) s
+                SELECT\s
+                    COALESCE(p.purchase_amount, 0) AS last_purchase_price,
+                    COALESCE(s.unit_price, 0) AS last_sale_price
+                FROM\s
+                    (SELECT * from product p where p.id = :productId) p
+                FULL OUTER JOIN\s
+                    (SELECT s.unit_price\s
+                     FROM sale s\s
+                     JOIN purchase p ON s.purchase_id = p.id
+                     WHERE s.customer_id = :customerId AND p.product_id = :productId
+                     ORDER BY s.id DESC\s
+                     LIMIT 1) s
+                ON TRUE
             """;
             
         try {
