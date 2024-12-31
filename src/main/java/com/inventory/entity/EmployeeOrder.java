@@ -29,7 +29,7 @@ public class EmployeeOrder {
     private Product product;
     
     @Column(name = "employee_ids", columnDefinition = "bigint[]")
-    private Long[] employeeIds;
+    private List<Long> employeeIds;
     
     @Column(name = "quantity", nullable = false)
     private Integer quantity;

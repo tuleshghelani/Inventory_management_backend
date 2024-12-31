@@ -162,7 +162,7 @@ public class EmployeeOrderService {
             .orElseThrow(() -> new ValidationException("Product not found"));
             
         order.setProduct(product);
-        order.setEmployeeIds(dto.getEmployeeIds().toArray(new Long[0]));
+        order.setEmployeeIds(dto.getEmployeeIds());
         order.setQuantity(dto.getQuantity());
         order.setRemarks(dto.getRemarks());
         order.setStatus(StringUtils.hasText(dto.getStatus()) ? dto.getStatus() : "O");
@@ -173,7 +173,7 @@ public class EmployeeOrderService {
         dto.setId(order.getId());
         dto.setProductId(order.getProduct().getId());
         dto.setProductName(order.getProduct().getName());
-        dto.setEmployeeIds(List.of(order.getEmployeeIds()));
+        dto.setEmployeeIds(order.getEmployeeIds());
         dto.setQuantity(order.getQuantity());
         dto.setRemarks(order.getRemarks());
         dto.setStatus(order.getStatus());
