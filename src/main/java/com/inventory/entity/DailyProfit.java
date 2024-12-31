@@ -35,6 +35,7 @@ import lombok.Setter;
         @Index(name = "idx_daily_profit_other_expenses", columnList = "other_expenses"),
         @Index(name = "idx_daily_profit_purchase_amount", columnList = "purchase_amount"),
         @Index(name = "idx_daily_profit_sale_amount", columnList = "sale_amount"),        
+        @Index(name = "idx_daily_profit_client_id", columnList = "client_id")
     }
 )
 public class DailyProfit {
@@ -69,4 +70,8 @@ public class DailyProfit {
     
     @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_daily_profit_client_id_client_id"))
+    private Client client;
 }

@@ -2,6 +2,7 @@ package com.inventory.service;
 
 import com.inventory.dao.TransportDao;
 import com.inventory.dto.TransportPdfDto;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -19,11 +20,12 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class TransportPdfGenerationService {
     private final TransportDao transportDao;
+    private final UtilityService utilityService;
 
     public byte[] generateTransportPdf(TransportPdfDto dto) {
         try {
-            Map<String, Object> transportData = transportDao.getTransportPdfData(dto.getId());
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            Map<String, Object> transportData = transportDao.getTransportPdfData(dto.getId(), currentUser.getClient().getId());
             Document document = new Document(PageSize.A4);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PdfWriter writer = PdfWriter.getInstance(document, out);

@@ -25,7 +25,7 @@ public class EmployeeOrderDto {
     private String status;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    
+    private Long clientId;
     // Search parameters
     private String search;
     private Integer currentPage = 0;

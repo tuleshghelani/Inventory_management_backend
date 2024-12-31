@@ -29,7 +29,7 @@ public class PowderCoatingProcessDto {
     private BigDecimal totalAmount;
     private String status;
     private Integer returnQuantity;
-
+    private Long clientId;
 
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")

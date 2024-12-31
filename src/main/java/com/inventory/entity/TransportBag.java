@@ -17,7 +17,8 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "transport_bag", indexes = {
-    @Index(name = "idx_transport_bag_transport_id", columnList = "transport_id")
+    @Index(name = "idx_transport_bag_transport_id", columnList = "transport_id"),
+    @Index(name = "idx_transport_bag_client_id", columnList = "client_id")
 })
 public class TransportBag {
     @Id
@@ -31,4 +32,8 @@ public class TransportBag {
     @JoinColumn(name = "transport_id", nullable = false, referencedColumnName = "id", 
         foreignKey = @ForeignKey(name = "fk_transport_bag_transport_id_transport_id"))
     private Transport transport;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_transport_bag_client_id_client_id"))
+    private Client client;
 } 

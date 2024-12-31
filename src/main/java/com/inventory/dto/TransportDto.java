@@ -22,7 +22,7 @@ public class TransportDto {
     private List<BagDto> bags;
     private String customerName;
     private OffsetDateTime createdAt;
-    
+    private Long clientId;
     // Search parameters
     private String search;
     private Integer currentPage = 0;
@@ -58,7 +58,7 @@ public class TransportDto {
         private Long productId;
         private Integer quantity;
         private String remarks;
-        
+        private Long clientId;
         // Purchase related fields
         private BigDecimal purchaseUnitPrice;
         private BigDecimal purchaseDiscount;

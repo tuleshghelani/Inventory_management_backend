@@ -14,7 +14,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Table(name = "transport", indexes = {
     @Index(name = "idx_transport_customer_id", columnList = "customer_id"),
-    @Index(name = "idx_transport_created_at", columnList = "created_at")
+    @Index(name = "idx_transport_created_at", columnList = "created_at"),
+    @Index(name = "idx_transport_client_id", columnList = "client_id")
 })
 public class Transport {
     @Id
@@ -39,4 +40,8 @@ public class Transport {
     @JoinColumn(name = "created_by", referencedColumnName = "id", 
         foreignKey = @ForeignKey(name = "fk_transport_created_by_user_master_id"))
     private UserMaster createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_transport_client_id_client_id"))
+    private Client client;
 } 

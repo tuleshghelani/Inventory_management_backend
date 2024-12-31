@@ -12,4 +12,5 @@ import java.math.BigDecimal;
 public class CoatingPriceDto {
     private Long id;
     private BigDecimal coatingUnitPrice;
+    private Long clientId;
 } 

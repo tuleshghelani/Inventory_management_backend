@@ -12,4 +12,5 @@ import lombok.Setter;
 public class LastPriceRequestDto {
     private Long productId;
     private Long customerId;
+    private Long clientId;
 } 

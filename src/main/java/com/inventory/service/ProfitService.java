@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.inventory.dao.ProfitDao;
 import com.inventory.dto.ProfitRequestDto;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 
 import lombok.RequiredArgsConstructor;
@@ -16,13 +17,17 @@ import lombok.RequiredArgsConstructor;
 public class ProfitService {
     private final ProfitDao profitDao;
     private static final long MAX_DATE_RANGE_DAYS = 62;
+    private final UtilityService utilityService;
     
     public Map<String, Object> getDailyProfits(ProfitRequestDto request) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            request.setClientId(currentUser.getClient().getId());
             validateRequest(request);
             return profitDao.getDailyProfitSummary(
                 request.getStartDate(),
-                request.getEndDate().withHour(23).withMinute(59).withSecond(59)
+                request.getEndDate().withHour(23).withMinute(59).withSecond(59),
+                request.getClientId()
             );
         } catch (Exception e) {
             e.printStackTrace();
@@ -32,10 +37,13 @@ public class ProfitService {
     
     public Map<String, Object> getProductWiseProfits(ProfitRequestDto request) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            request.setClientId(currentUser.getClient().getId());
             validateRequest(request);
             return (Map<String, Object>) profitDao.getProductWiseProfitSummary(
                 request.getStartDate(),
-                request.getEndDate().withHour(23).withMinute(59).withSecond(59)
+                request.getEndDate().withHour(23).withMinute(59).withSecond(59),
+                request.getClientId()
             );
         } catch (Exception e) {
             e.printStackTrace();

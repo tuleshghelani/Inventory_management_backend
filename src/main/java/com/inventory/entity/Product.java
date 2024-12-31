@@ -21,6 +21,7 @@ import java.math.BigDecimal;
         @Index(name = "idx_product_status", columnList = "status"),
         @Index(name = "idx_product_remaining_quantity", columnList = "remaining_quantity"),
         @Index(name = "idx_product_category_id", columnList = "category_id"),
+        @Index(name = "idx_product_client_id", columnList = "client_id")
     }
 )
 public class Product {
@@ -62,4 +63,8 @@ public class Product {
     
     @Column(name = "minimum_stock", precision = 10, scale = 2)
     private BigDecimal minimumStock;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_product_client_id_client_id"))
+    private Client client;
 }

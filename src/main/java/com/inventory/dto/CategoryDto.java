@@ -19,4 +19,5 @@ public class CategoryDto {
     private Integer size = 10;
     private String sortBy = "id";
     private String sortDir = "desc";
+    private Long clientId;
 }

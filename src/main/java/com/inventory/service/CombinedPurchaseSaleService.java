@@ -44,13 +44,18 @@ public class CombinedPurchaseSaleService {
             Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ValidationException("Product not found"));
 
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(product.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to create purchase for this product");
+            }
+
             // Create purchase
             Purchase purchase = new Purchase();
             purchase.setProduct(product);
             purchase.setCategory(product.getCategory());
             purchase.setQuantity(dto.getQuantity());
             purchase.setUnitPrice(dto.getPurchaseUnitPrice());
-            
+            purchase.setClient(currentUser.getClient());
             // Calculate purchase amounts with discount
             calculatePurchaseAmounts(purchase, dto);
             
@@ -58,7 +63,7 @@ public class CombinedPurchaseSaleService {
             purchase.setInvoiceNumber(dto.getPurchaseInvoiceNumber());
             purchase.setOtherExpenses(dto.getPurchaseOtherExpenses());
             purchase.setRemainingQuantity(0);
-            purchase.setCreatedBy(utilityService.getCurrentLoggedInUser());
+            purchase.setCreatedBy(currentUser);
             
             purchase = purchaseRepository.save(purchase);
             quantityTrackingService.updateQuantitiesAfterPurchase(purchase);
@@ -75,7 +80,8 @@ public class CombinedPurchaseSaleService {
             sale.setSaleDate(dto.getSaleDate() != null ? dto.getSaleDate() : OffsetDateTime.now());
             sale.setInvoiceNumber(dto.getSaleInvoiceNumber());
             sale.setOtherExpenses(dto.getSaleOtherExpenses());
-            sale.setCreatedBy(utilityService.getCurrentLoggedInUser());
+            sale.setCreatedBy(currentUser);
+            sale.setClient(currentUser.getClient());
 
             sale = saleRepository.save(sale);
             quantityTrackingService.updateQuantitiesAfterSale(sale);
@@ -143,6 +149,7 @@ public class CombinedPurchaseSaleService {
         dailyProfit.setSaleAmount(saleAmount);
         dailyProfit.setGrossProfit(saleAmount.subtract(purchaseAmount));
         dailyProfit.setOtherExpenses(sale.getOtherExpenses());
+        dailyProfit.setClient(sale.getClient());
         
         // Calculate net profit using discounted prices
         dailyProfit.setNetProfit(dailyProfit.getGrossProfit().subtract(

@@ -17,6 +17,7 @@ import java.math.BigDecimal;
     @Index(name = "idx_customer_mobile", columnList = "mobile"),
     @Index(name = "idx_customer_email", columnList = "email"),
     @Index(name = "idx_customer_remaining_payment_amount", columnList = "remaining_payment_amount"),
+    @Index(name = "idx_customer_client_id", columnList = "client_id")
 })
 public class Customer {
     @Id
@@ -62,4 +63,8 @@ public class Customer {
     
     @Column(name = "remarks", length = 1000)
     private String remarks;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_customer_client_id_client_id"))
+    private Client client;
 } 

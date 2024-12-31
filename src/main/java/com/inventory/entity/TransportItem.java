@@ -12,7 +12,8 @@ import lombok.*;
 @Table(name = "transport_items", indexes = {
     @Index(name = "idx_transport_items_product_id", columnList = "product_id"),
     @Index(name = "idx_transport_items_transport_bag_id", columnList = "transport_bag_id"),
-    @Index(name = "idx_transport_items_transport_id", columnList = "transport_id")
+    @Index(name = "idx_transport_items_transport_id", columnList = "transport_id"),
+    @Index(name = "idx_transport_items_client_id", columnList = "client_id")
 })
 public class TransportItem {
     @Id
@@ -39,4 +40,8 @@ public class TransportItem {
     @JoinColumn(name = "transport_id", nullable = false, referencedColumnName = "id",
         foreignKey = @ForeignKey(name = "fk_transport_items_transport_id_transport_id"))
     private Transport transport;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_transport_items_client_id_client_id"))
+    private Client client;
 } 

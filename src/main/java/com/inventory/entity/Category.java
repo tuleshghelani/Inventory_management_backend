@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
         @UniqueConstraint( name = "uk_category_name",  columnNames ={"name"})
 }, indexes = {
         @Index(name = "idx_category_name", columnList = "name"),
+        @Index(name = "idx_category_client_id", columnList = "client_id")
 })
 public class Category {
     @Id
@@ -39,4 +40,8 @@ public class Category {
     
     @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_category_client_id_client_id"))
+    private Client client;
 }

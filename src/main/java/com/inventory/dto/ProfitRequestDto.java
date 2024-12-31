@@ -16,6 +16,7 @@ import lombok.Setter;
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProfitRequestDto {
+    private Long clientId;
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy", timezone = "Asia/Kolkata")
     private OffsetDateTime startDate;

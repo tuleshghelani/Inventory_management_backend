@@ -4,6 +4,7 @@ import com.inventory.dto.ApiResponse;
 import com.inventory.dto.EmployeeOrderDto;
 import com.inventory.entity.EmployeeOrder;
 import com.inventory.entity.Product;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.EmployeeOrderRepository;
 import com.inventory.repository.EmployeeRepository;
@@ -31,10 +32,12 @@ public class EmployeeOrderService {
     public ApiResponse<?> create(EmployeeOrderDto dto) {
         try {
             validateEmployeeOrder(dto);
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             EmployeeOrder order = new EmployeeOrder();
             mapDtoToEntity(dto, order);
-            order.setCreatedBy(utilityService.getCurrentLoggedInUser());
+            order.setClient(currentUser.getClient());
+            order.setCreatedBy(currentUser);
             
             order = employeeOrderRepository.save(order);
             return ApiResponse.success("Employee order created successfully");
@@ -56,7 +59,12 @@ public class EmployeeOrderService {
             
             EmployeeOrder order = employeeOrderRepository.findById(dto.getId())
                 .orElseThrow(() -> new ValidationException("Employee order not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(order.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this employee order");
+            }
+            order.setClient(currentUser.getClient());
+            order.setCreatedBy(currentUser);
             mapDtoToEntity(dto, order);
             order.setUpdatedAt(OffsetDateTime.now());
             
@@ -74,7 +82,10 @@ public class EmployeeOrderService {
         try {
             EmployeeOrder order = employeeOrderRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Employee order not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(order.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this employee order");
+            }
             employeeOrderRepository.delete(order);
             return ApiResponse.success("Employee order deleted successfully");
         } catch (ValidationException e) {
@@ -86,6 +97,8 @@ public class EmployeeOrderService {
 
     public ApiResponse<?> searchEmployeeOrders(EmployeeOrderDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             validateSearchRequest(dto);
             Map<String, Object> result = employeeOrderDao.searchEmployeeOrders(dto);
             return ApiResponse.success("Employee orders retrieved successfully", result);
@@ -102,7 +115,11 @@ public class EmployeeOrderService {
             
             EmployeeOrder order = employeeOrderRepository.findById(dto.getId())
                 .orElseThrow(() -> new ValidationException("Employee order not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(order.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to view this employee order");
+            }
+
             return ApiResponse.success("Employee order detail retrieved successfully", mapEntityToDto(order));
         } catch (Exception e) {
             throw new ValidationException("Failed to get employee order detail: " + e.getMessage());

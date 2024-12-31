@@ -19,37 +19,39 @@ public class EmployeeOrderDao {
     private final EntityManager entityManager;
     
     public Map<String, Object> searchEmployeeOrders(EmployeeOrderDto dto) {
-        StringBuilder countQuery = new StringBuilder("SELECT COUNT(eo) FROM EmployeeOrder eo JOIN eo.product p WHERE 1=1");
+        StringBuilder countQuery = new StringBuilder("SELECT COUNT(*) FROM (SELECT * FROM employee_orders WHERE client_id = :clientId) eo JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON eo.product_id = p.id");
         StringBuilder dataQuery = new StringBuilder("""
             SELECT 
                 eo.id, 
-                eo.createdAt,
-                eo.updatedAt,
+                eo.created_at as createdAt,
+                eo.updated_at as updatedAt,
                 p.id as productId,
                 p.name as productName,
-                eo.employeeIds,
+                eo.employee_ids as employeeIds,
                 eo.quantity,
                 eo.remarks,
                 eo.status
-            FROM EmployeeOrder eo
-            JOIN eo.product p
+            FROM (SELECT * FROM employee_orders WHERE client_id = :clientId) eo
+            JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON eo.product_id = p.id 
             WHERE 1=1
         """);
         
         Map<String, Object> params = new HashMap<>();
+        params.put("clientId", dto.getClientId());
         buildWhereClause(countQuery, dataQuery, params, dto);
         
         dataQuery.append(" ORDER BY eo.").append(dto.getSortBy())
-                .append(" ").append(dto.getSortDir());
+                .append(" ").append(dto.getSortDir())
+                .append(" LIMIT :perPageRecord OFFSET :offset");
         
-        Query query = entityManager.createQuery(countQuery.toString());
+        Query query = entityManager.createNativeQuery(countQuery.toString());
         setParameters(query, params);
-        long totalRecords = (long) query.getSingleResult();
+        long totalRecords = ((Number) query.getSingleResult()).longValue();
         
-        query = entityManager.createQuery(dataQuery.toString());
+        query = entityManager.createNativeQuery(dataQuery.toString());
+        params.put("offset", dto.getCurrentPage() * dto.getPerPageRecord());
+        params.put("perPageRecord", dto.getPerPageRecord());
         setParameters(query, params);
-        query.setFirstResult(dto.getCurrentPage() * dto.getPerPageRecord());
-        query.setMaxResults(dto.getPerPageRecord());
         
         List<Object[]> results = query.getResultList();
         return transformResults(results, totalRecords, dto);

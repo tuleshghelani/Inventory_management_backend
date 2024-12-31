@@ -53,6 +53,9 @@ public class ProductDao {
             }
         }
         
+        sql.append(" AND p.client_id = :clientId");
+        params.put("clientId", productDto.getClientId());
+        
         sql.append(" ORDER BY p.id DESC");
         
         Query query = entityManager.createNativeQuery(sql.toString());
@@ -149,6 +152,9 @@ public class ProductDao {
                 params.put("categoryId", productDto.getCategoryId());
             }
         }
+
+        sql.append(" AND p.client_id = :clientId");
+        params.put("clientId", productDto.getClientId());
     }
 
     private void setQueryParameters(Query query, Map<String, Object> params, ProductDto productDto) {

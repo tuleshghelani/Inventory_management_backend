@@ -3,6 +3,7 @@ package com.inventory.service;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.EmployeeDto;
 import com.inventory.entity.Employee;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.EmployeeRepository;
 import com.inventory.dao.EmployeeDao;
@@ -36,9 +37,11 @@ public class EmployeeService {
                 }
             }
 
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
             Employee employee = new Employee();
             mapDtoToEntity(dto, employee);
-            employee.setCreatedBy(utilityService.getCurrentLoggedInUser());
+            employee.setCreatedBy(currentUser);
+            employee.setClient(currentUser.getClient());
             
             employee = employeeRepository.save(employee);
             return ApiResponse.success("Employee created successfully", mapEntityToDto(employee));
@@ -56,6 +59,11 @@ public class EmployeeService {
             
             Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Employee not found"));
+
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(employee.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this employee");
+            }
 
             if(!Objects.isNull(dto.getMobileNumber())) {
                 Optional<Employee> existingEmployee = employeeRepository.findByMobileNumberAndIdNot(
@@ -82,7 +90,10 @@ public class EmployeeService {
         try {
             Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Employee not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(employee.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this employee");
+            }
             employeeRepository.delete(employee);
             return ApiResponse.success("Employee deleted successfully");
         } catch (ValidationException e) {
@@ -94,6 +105,8 @@ public class EmployeeService {
 
     public ApiResponse<Map<String, Object>> searchEmployees(EmployeeDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             Map<String, Object> result = employeeDao.searchEmployees(dto);
             return ApiResponse.success("Employees retrieved successfully", result);
         } catch (Exception e) {
@@ -106,7 +119,13 @@ public class EmployeeService {
             if (dto.getId() == null) {
                 throw new ValidationException("Employee ID is required");
             }
-            
+            Employee employee = employeeRepository.findById(dto.getId())
+                .orElseThrow(() -> new ValidationException("Employee not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(employee.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to view this employee");
+            }
+
             Map<String, Object> result = employeeDao.getEmployeeDetail(dto.getId());
             return ApiResponse.success("Employee detail retrieved successfully", result);
         } catch (Exception e) {
@@ -116,7 +135,8 @@ public class EmployeeService {
 
     public ApiResponse<?> getAllEmployees() {
         try {
-            List<Map<String, Object>> employees = employeeDao.getAllEmployees();
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            List<Map<String, Object>> employees = employeeDao.getAllEmployees(currentUser.getClient().getId());
             return ApiResponse.success("Employees retrieved successfully", employees);
         } catch (Exception e) {
             throw new ValidationException("Failed to get employees: " + e.getMessage());
@@ -143,6 +163,7 @@ public class EmployeeService {
         employee.setDesignation(dto.getDesignation());
         employee.setDepartment(dto.getDepartment());
         employee.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
+        employee.setClient(utilityService.getCurrentLoggedInUser().getClient());
     }
 
     private EmployeeDto mapEntityToDto(Employee employee) {
@@ -155,6 +176,7 @@ public class EmployeeService {
         dto.setDesignation(employee.getDesignation());
         dto.setDepartment(employee.getDepartment());
         dto.setStatus(employee.getStatus());
+        dto.setClientId(employee.getClient().getId());
         return dto;
     }
 } 

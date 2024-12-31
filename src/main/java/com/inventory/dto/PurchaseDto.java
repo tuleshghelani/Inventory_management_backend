@@ -22,7 +22,7 @@ public class PurchaseDto {
     private Integer quantity;
     private BigDecimal unitPrice;
     private BigDecimal totalAmount;
-
+    private Long clientId;
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime purchaseDate;

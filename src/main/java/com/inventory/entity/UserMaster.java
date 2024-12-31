@@ -11,7 +11,10 @@ import java.time.OffsetDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "\"user_master\"", uniqueConstraints={
+@Table(name = "\"user_master\"", indexes = {
+    @Index(name = "idx_user_master_email", columnList = "email"),
+    @Index(name = "idx_user_master_client_id", columnList = "client_id")
+}, uniqueConstraints={
         @UniqueConstraint( name = "uk_user_master_email",  columnNames ={"email"})
 })
 public class UserMaster {

@@ -46,6 +46,9 @@ public class CategoryDao {
             }
         }
 
+        sql.append(" AND c.client_id = :clientId");
+        params.put("clientId", categoryDto.getClientId());
+
         sql.append(" ORDER BY c.id DESC");
 
         Query query = entityManager.createNativeQuery(sql.toString());
@@ -87,7 +90,7 @@ public class CategoryDao {
             SELECT COUNT(c.id)
             FROM category c
             LEFT JOIN user_master u ON c.created_by = u.id
-            WHERE 1=1
+            WHERE c.client_id = :clientId
         """);
 
         appendSearchConditions(countSql, params, categoryDto);
@@ -108,7 +111,7 @@ public class CategoryDao {
                 c.remaining_quantity
             FROM category c
             LEFT JOIN user_master u ON c.created_by = u.id
-            WHERE 1=1
+            WHERE c.client_id = :clientId
         """);
 
         appendSearchConditions(sql, params, categoryDto);
@@ -138,6 +141,8 @@ public class CategoryDao {
                 params.put("status", categoryDto.getStatus().trim());
             }
         }
+        sql.append(" AND c.client_id = :clientId");
+        params.put("clientId", categoryDto.getClientId());
     }
 
     private void setQueryParameters(Query query, Map<String, Object> params, CategoryDto categoryDto) {

@@ -21,7 +21,8 @@ public class CustomerDao {
         StringBuilder countSql = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
 
-        countSql.append("SELECT COUNT(c.id) FROM customer c WHERE 1=1");
+        countSql.append("SELECT COUNT(c.id) FROM customer c WHERE c.client_id = :clientId");
+        params.put("clientId", dto.getClientId());
 
         if (StringUtils.hasText(dto.getSearch())) {
             countSql.append(" AND (LOWER(c.name) LIKE LOWER(:search) OR c.mobile LIKE :search OR LOWER(c.gst) LIKE LOWER(:search))");
@@ -49,7 +50,7 @@ public class CustomerDao {
                 c.email, c.remarks, c.status, c.coating_unit_price,
                 c.created_at, c.updated_at
             FROM customer c
-            WHERE 1=1
+            WHERE c.client_id = :clientId
         """);
 
         if (StringUtils.hasText(dto.getSearch())) {
@@ -63,6 +64,8 @@ public class CustomerDao {
             sql.append(" AND c.next_action_date <= :endDate");
             params.put("endDate", dto.getEndDate());
         }
+
+        params.put("clientId", dto.getClientId());
 
         sql.append(" ORDER BY c.id DESC LIMIT :pageSize OFFSET :offset");
 
@@ -114,8 +117,9 @@ public class CustomerDao {
                 c.id,
                 c.name
             FROM customer c
-            WHERE c.status = 'A'
+            WHERE c.status = 'A' AND c.client_id = :clientId
         """);
+        params.put("clientId", dto.getClientId());
 
         if (StringUtils.hasText(dto.getSearch())) {
             sql.append(" AND LOWER(c.name) LIKE LOWER(:search)");

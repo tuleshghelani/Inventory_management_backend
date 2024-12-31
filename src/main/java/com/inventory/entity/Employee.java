@@ -14,7 +14,8 @@ import java.time.OffsetDateTime;
 @Table(name = "employee", indexes = {
     @Index(name = "idx_employee_name", columnList = "name"),
     @Index(name = "idx_employee_mobile", columnList = "mobile_number"),
-    @Index(name = "idx_employee_status", columnList = "status")
+    @Index(name = "idx_employee_status", columnList = "status"),
+    @Index(name = "idx_employee_client_id", columnList = "client_id")
 })
 public class Employee {
     @Id
@@ -51,4 +52,8 @@ public class Employee {
     
     @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_employee_client_id_client_id"))
+    private Client client;
 } 

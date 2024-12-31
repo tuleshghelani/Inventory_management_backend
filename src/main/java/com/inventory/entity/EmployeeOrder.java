@@ -15,7 +15,8 @@ import java.util.List;
 @Table(name = "employee_orders", indexes = {
     @Index(name = "idx_employee_orders_product_id", columnList = "product_id"),
     @Index(name = "idx_employee_orders_status", columnList = "status"),
-    @Index(name = "idx_employee_orders_created_at", columnList = "created_at")
+    @Index(name = "idx_employee_orders_created_at", columnList = "created_at"),
+    @Index(name = "idx_employee_orders_client_id", columnList = "client_id")
 })
 public class EmployeeOrder {
     @Id
@@ -49,4 +50,8 @@ public class EmployeeOrder {
     @JoinColumn(name = "created_by", referencedColumnName = "id",
         foreignKey = @ForeignKey(name = "fk_employee_orders_created_by_user_master_id"))
     private UserMaster createdBy;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_employee_orders_client_id_client_id"))
+    private Client client;
 } 

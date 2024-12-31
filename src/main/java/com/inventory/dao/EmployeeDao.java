@@ -133,17 +133,20 @@ public class EmployeeDao {
         return employee;
     }
 
-    public List<Map<String, Object>> getAllEmployees() {
-        String query = """
+    public List<Map<String, Object>> getAllEmployees(Long clientId) {
+        String sql = """
             SELECT 
                 e.id,
                 e.name
             FROM employee e
-            WHERE e.status = 'A'
+            WHERE e.status = 'A' AND e.client_id = :clientId
             ORDER BY e.name ASC
         """;
         
-        List<Object[]> results = entityManager.createNativeQuery(query).getResultList();
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("clientId", clientId);
+        
+        List<Object[]> results = query.getResultList();
         List<Map<String, Object>> employees = new ArrayList<>();
         
         for (Object[] row : results) {

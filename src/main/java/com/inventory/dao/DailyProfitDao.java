@@ -23,12 +23,12 @@ public class DailyProfitDao {
 
         countSql.append("""
             SELECT COUNT(dp.id)
-            FROM daily_profit dp
-            JOIN sale s ON dp.sale_id = s.id
-            JOIN purchase p ON s.purchase_id = p.id
-            JOIN product pr ON p.product_id = pr.id
-            WHERE 1=1
+            FROM (SELECT * FROM daily_profit WHERE client_id = :clientId) dp
+            JOIN (SELECT * FROM sale WHERE client_id = :clientId) s ON dp.sale_id = s.id
+            JOIN (SELECT * FROM purchase WHERE client_id = :clientId) p ON s.purchase_id = p.id
+            JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
         """);
+        params.put("clientId", dto.getClientId());
 
         appendSearchConditions(countSql, params, dto);
         
@@ -50,12 +50,13 @@ public class DailyProfitDao {
                 s.invoice_number as sale_invoice,
                 pr.name as product_name,
                 pr.id as product_id
-            FROM daily_profit dp
-            JOIN sale s ON dp.sale_id = s.id
-            JOIN purchase p ON s.purchase_id = p.id
-            JOIN product pr ON p.product_id = pr.id
+            FROM (SELECT * FROM daily_profit WHERE client_id = :clientId) dp
+            JOIN (SELECT * FROM sale WHERE client_id = :clientId) s ON dp.sale_id = s.id
+            JOIN (SELECT * FROM purchase WHERE client_id = :clientId) p ON s.purchase_id = p.id
+            JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
             WHERE 1=1
         """);
+        params.put("clientId", dto.getClientId());
 
         appendSearchConditions(sql, params, dto);
         sql.append("""

@@ -4,6 +4,7 @@ import com.inventory.dto.ApiResponse;
 import com.inventory.dto.PowderCoatingProcessDto;
 import com.inventory.entity.PowderCoatingProcess;
 import com.inventory.entity.PowderCoatingReturn;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.PowderCoatingProcessRepository;
 import com.inventory.repository.PowderCoatingReturnRepository;
@@ -38,14 +39,16 @@ public class PowderCoatingProcessService {
                 .orElseThrow(() -> new ValidationException("Customer not found")));
             process.setProduct(productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new ValidationException("Product not found")));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            process.setClient(currentUser.getClient());
+            process.setCreatedBy(currentUser);
+
             process.setQuantity(dto.getQuantity());
             process.setRemainingQuantity(dto.getQuantity());
             process.setTotalBags(dto.getTotalBags());
             process.setUnitPrice(dto.getUnitPrice());
             process.setTotalAmount(dto.getUnitPrice().multiply(BigDecimal.valueOf(dto.getQuantity())));
             process.setRemarks(dto.getRemarks());
-            process.setCreatedBy(utilityService.getCurrentLoggedInUser());
             process.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
             
             processRepository.save(process);
@@ -74,6 +77,11 @@ public class PowderCoatingProcessService {
                 .map(PowderCoatingReturn::getReturnQuantity)
                 .reduce(0, Integer::sum);
             
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(process.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this powder coating process");
+            }
+            
             process.setQuantity(dto.getQuantity());
             process.setRemainingQuantity(dto.getQuantity() - totalReturnedQuantity);
             process.setTotalBags(dto.getTotalBags());
@@ -100,7 +108,10 @@ public class PowderCoatingProcessService {
         try {
             PowderCoatingProcess process = processRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Process not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(process.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this powder coating process");
+            }
             processRepository.delete(process);
             return ApiResponse.success("Process deleted successfully");
         } catch (Exception e) {
@@ -110,6 +121,8 @@ public class PowderCoatingProcessService {
 
     public ApiResponse<Map<String, Object>> searchProcesses(PowderCoatingProcessDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             Map<String, Object> result = processDao.searchProcesses(dto);
             return ApiResponse.success("Processes retrieved successfully", result);
         } catch (Exception e) {
@@ -126,6 +139,11 @@ public class PowderCoatingProcessService {
 
             PowderCoatingProcess process = processRepository.findById(processId)
                 .orElseThrow(() -> new ValidationException("Process not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(process.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to return quantity for this process");
+            }
+
 
             if (process.getRemainingQuantity() < returnQuantity) {
                 throw new ValidationException("Return quantity cannot be greater than remaining quantity");
@@ -188,6 +206,7 @@ public class PowderCoatingProcessService {
         dto.setCustomerName(process.getCustomer().getName());
         dto.setProductName(process.getProduct().getName());
         dto.setCreatedAt(process.getCreatedAt());
+        dto.setClientId(process.getClient().getId());
         return dto;
     }
 

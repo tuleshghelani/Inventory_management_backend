@@ -3,6 +3,7 @@ package com.inventory.service;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.SaleDto;
 import com.inventory.entity.Sale;
+import com.inventory.entity.UserMaster;
 import com.inventory.entity.Purchase;
 import com.inventory.entity.DailyProfit;
 import com.inventory.exception.ValidationException;
@@ -29,6 +30,7 @@ public class SaleService {
     private final DailyProfitRepository dailyProfitRepository;
     private final SaleDao saleDao;
     private final QuantityTrackingService quantityTrackingService;
+    private final UtilityService utilityService;
 
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<?> create(SaleDto dto) {
@@ -46,7 +48,7 @@ public class SaleService {
             if (purchase.getRemainingQuantity() < dto.getQuantity()) {
                 throw new ValidationException("Insufficient stock. Available: " + purchase.getRemainingQuantity());
             }
-
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
             Sale sale = new Sale();
             sale.setPurchase(purchase);
             sale.setQuantity(dto.getQuantity());
@@ -55,6 +57,8 @@ public class SaleService {
             sale.setSaleDate(dto.getSaleDate());
             sale.setInvoiceNumber(dto.getInvoiceNumber().trim());
             sale.setOtherExpenses(dto.getOtherExpenses());
+            sale.setClient(currentUser.getClient());
+            sale.setCreatedBy(currentUser);
 
             sale = saleRepository.save(sale);
             // Update remaining quantity
@@ -76,6 +80,8 @@ public class SaleService {
 
     public ApiResponse<Map<String, Object>> searchSales(SaleDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             Map<String, Object> result = saleDao.searchSales(dto);
             return ApiResponse.success("Sales retrieved successfully", result);
         } catch (Exception e) {
@@ -91,6 +97,11 @@ public class SaleService {
             Sale existingSale = saleRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Sale not found"));
                 
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(existingSale.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this sale");
+            }
+
             // Check if new invoice number is unique (if changed)
 //            if (!existingSale.getInvoiceNumber().equals(dto.getInvoiceNumber().trim())) {
 //                Optional<Sale> saleWithInvoice = saleRepository.findByInvoiceNumber(dto.getInvoiceNumber().trim());
@@ -144,7 +155,10 @@ public class SaleService {
         try {
             Sale sale = saleRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Sale not found"));
-
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(sale.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this sale");
+            }
             // First, delete associated profit record
             DailyProfit profit = dailyProfitRepository.findBySaleId(sale.getId())
                 .orElseThrow(() -> new ValidationException("Profit record not found"));
@@ -153,6 +167,7 @@ public class SaleService {
             // Restore purchase quantity before deleting sale
             Purchase purchase = sale.getPurchase();
             purchase.setRemainingQuantity(purchase.getRemainingQuantity() + sale.getQuantity());
+            purchase.setClient(sale.getClient());
             purchaseRepository.save(purchase);
 
             // Finally, delete the sale
@@ -232,6 +247,7 @@ public class SaleService {
     }
 
     private void calculateAndSaveProfit(Sale sale) {
+        UserMaster currentUser = utilityService.getCurrentLoggedInUser();
         BigDecimal purchaseAmount = sale.getPurchase().getUnitPrice()
             .multiply(BigDecimal.valueOf(sale.getQuantity()));
         
@@ -249,7 +265,8 @@ public class SaleService {
         profit.setOtherExpenses(sale.getOtherExpenses());
         profit.setNetProfit(netProfit);
         profit.setProfitDate(sale.getSaleDate());
-        
+        profit.setClient(currentUser.getClient());
+
         dailyProfitRepository.save(profit);
     }
 
@@ -266,6 +283,7 @@ public class SaleService {
         dto.setDiscount(sale.getDiscount());
         dto.setDiscountAmount(sale.getDiscountAmount());
         dto.setDiscountPrice(sale.getDiscountPrice());
+        dto.setClientId(sale.getClient().getId());
         return dto;
     }
 }

@@ -13,4 +13,5 @@ import java.util.List;
 public class PowderCoatingProcessPdfDto {
     private Long customerId;
     private List<Long> processIds;
+    private Long clientId;
 } 

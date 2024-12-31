@@ -33,6 +33,7 @@ import lombok.Setter;
     @Index(name = "idx_sale_customer_id", columnList = "customer_id"),
     @Index(name = "idx_sale_transport_id", columnList = "transport_id"),
     @Index(name = "idx_sale_transport_item_id", columnList = "transport_item_id"),
+    @Index(name = "idx_sale_client_id", columnList = "client_id")
 })
 public class Sale {
     @Id
@@ -92,4 +93,8 @@ public class Sale {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_item_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_transport_item_id_transport_item_id"))
     private TransportItem transportItem;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_client_id_client_id"))
+    private Client client;
 }

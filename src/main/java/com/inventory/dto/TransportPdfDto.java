@@ -9,4 +9,5 @@ import lombok.Setter;
 @Setter
 public class TransportPdfDto {
     private Long id;
+    private Long clientId;
 } 

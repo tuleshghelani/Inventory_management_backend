@@ -22,7 +22,7 @@ public class EmployeeDto {
     private String designation;
     private String department;
     private String status;
-    
+    private Long clientId;
     // Search and pagination parameters
     private String search;
     private Integer page = 0;

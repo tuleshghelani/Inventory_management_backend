@@ -21,11 +21,12 @@ public class PowderCoatingProcessDao {
 
         countSql.append("""
             SELECT COUNT(pcp.id)
-            FROM powder_coating_process pcp
-            LEFT JOIN customer c ON pcp.customer_id = c.id
-            LEFT JOIN product p ON pcp.product_id = p.id
+            FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcp.product_id = p.id
             WHERE 1=1
         """);
+        params.put("clientId", dto.getClientId());
 
         appendSearchConditions(countSql, params, dto);
         
@@ -52,9 +53,9 @@ public class PowderCoatingProcessDao {
                 p.name as product_name,
                 pcp.unit_price,
                 pcp.total_amount
-            FROM powder_coating_process pcp
-            LEFT JOIN customer c ON pcp.customer_id = c.id
-            LEFT JOIN product p ON pcp.product_id = p.id
+            FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcp.product_id = p.id
             WHERE 1=1
         """);
 
@@ -135,7 +136,7 @@ public class PowderCoatingProcessDao {
         return response;
     }
 
-    public Map<String, Object> getProcess(Long id) {
+    public Map<String, Object> getProcess(Long id, Long clientId) {
         String query = """
             SELECT 
                 pcp.id,
@@ -151,15 +152,15 @@ public class PowderCoatingProcessDao {
                 p.name as product_name,
                 pcp.unit_price,
                 pcp.total_amount
-            FROM powder_coating_process pcp
-            LEFT JOIN customer c ON c.id = pcp.customer_id
-            LEFT JOIN product p ON p.id = pcp.product_id
+            FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON c.id = pcp.customer_id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON p.id = pcp.product_id
             WHERE pcp.id = :id
         """;
 
         Query nativeQuery = entityManager.createNativeQuery(query);
         nativeQuery.setParameter("id", id);
-        
+        nativeQuery.setParameter("clientId", clientId);
         Object[] result = (Object[]) nativeQuery.getSingleResult();
         
         Map<String, Object> process = new HashMap<>();

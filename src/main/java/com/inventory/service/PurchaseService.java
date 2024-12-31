@@ -73,6 +73,7 @@ public class PurchaseService {
             purchase.setRemainingQuantity(dto.getQuantity());
             UserMaster currentLoggedInUser = utilityService.getCurrentLoggedInUser();
             purchase.setCreatedBy(currentLoggedInUser);
+            purchase.setClient(currentLoggedInUser.getClient());
                 
             purchase = purchaseRepository.save(purchase);
             quantityTrackingService.updateQuantitiesAfterPurchase(purchase);
@@ -86,10 +87,13 @@ public class PurchaseService {
 
     public ApiResponse<List<PurchaseDto>> findAll() {
         try {
-            List<PurchaseDto> purchases = purchaseRepository.findAll().stream()
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            List<Purchase> purchases = purchaseRepository.findByClientId(currentUser.getClient().getId());
+            List<PurchaseDto> purchasesDto = purchases.stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
-            return ApiResponse.success("Purchases retrieved successfully", purchases);
+            
+            return ApiResponse.success("Purchases retrieved successfully", purchasesDto);
         } catch (Exception e) {
             throw new ValidationException("Failed to retrieve purchases");
         }
@@ -156,11 +160,14 @@ public class PurchaseService {
         dto.setPurchaseDate(purchase.getPurchaseDate());
         dto.setInvoiceNumber(purchase.getInvoiceNumber());
         dto.setOtherExpenses(purchase.getOtherExpenses());
+        dto.setClientId(purchase.getClient().getId());
         return dto;
     }
 
     public Page<Map<String, Object>> searchPurchases(PurchaseDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             return purchaseDao.searchPurchases(dto);
         } catch (Exception e) {
             e.printStackTrace();
@@ -173,7 +180,10 @@ public class PurchaseService {
             try {
                 Purchase purchase = purchaseRepository.findById(id)
                     .orElseThrow(() -> new ValidationException("Purchase not found"));
-
+                UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+                if(purchase.getClient().getId() != currentUser.getClient().getId()) {
+                    throw new ValidationException("You are not authorized to delete this purchase");
+                }
                 // Check if there are any associated sales
                 List<Sale> existingSales = saleRepository.findByPurchaseId(purchase.getId());
                 if (!existingSales.isEmpty()) {

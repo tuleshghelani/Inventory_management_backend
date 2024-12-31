@@ -21,37 +21,38 @@ public class TransportDao {
     private final EntityManager entityManager;
     
     public Map<String, Object> searchTransports(TransportDto dto) {
-        StringBuilder countQuery = new StringBuilder("SELECT COUNT(t) FROM Transport t JOIN t.customer c WHERE 1=1");
+        Map<String, Object> params = new HashMap<>();
+        StringBuilder countQuery = new StringBuilder("SELECT COUNT(*) FROM transport t JOIN customer c ON t.customer_id = c.id WHERE t.client_id = :clientId");
         StringBuilder dataQuery = new StringBuilder("""
             SELECT 
                 t.id, 
-                t.createdAt, 
+                t.created_at as createdAt, 
                 c.name as customerName, 
                 c.id as customerId,
-                t.totalWeight,
-                t.totalBags
-            FROM Transport t
-            JOIN t.customer c
+                t.total_weight as totalWeight,
+                t.total_bags as totalBags
+            FROM (SELECT * FROM transport WHERE client_id = :clientId) t
+            JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON t.customer_id = c.id
             WHERE 1=1
         """);
-        
-        Map<String, Object> params = new HashMap<>();
+        params.put("clientId", dto.getClientId());
         buildWhereClause(countQuery, dataQuery, params, dto);
         
         // Add sorting
         String sortField = getSortField(dto.getSortBy());
-        dataQuery.append(" ORDER BY ").append(sortField).append(" ").append(dto.getSortDir());
+        dataQuery.append(" ORDER BY ").append(sortField).append(" ").append(dto.getSortDir())
+                .append(" LIMIT :perPageRecord OFFSET :offset");
         
         // Execute count query
-        Query query = entityManager.createQuery(countQuery.toString());
+        Query query = entityManager.createNativeQuery(countQuery.toString());
         setParameters(query, params);
-        long totalRecords = (long) query.getSingleResult();
+        long totalRecords = ((Number) query.getSingleResult()).longValue();
         
         // Execute data query with pagination
-        query = entityManager.createQuery(dataQuery.toString());
+        query = entityManager.createNativeQuery(dataQuery.toString());
+        params.put("offset", dto.getCurrentPage() * dto.getPerPageRecord());
+        params.put("perPageRecord", dto.getPerPageRecord());
         setParameters(query, params);
-        query.setFirstResult(dto.getCurrentPage() * dto.getPerPageRecord());
-        query.setMaxResults(dto.getPerPageRecord());
         
         List<Object[]> results = query.getResultList();
         return transformResults(results, totalRecords, dto);
@@ -67,14 +68,14 @@ public class TransportDao {
         }
         
         if (dto.getStartDate() != null) {
-            countQuery.append(" AND t.createdAt >= :startDate");
-            dataQuery.append(" AND t.createdAt >= :startDate");
+            countQuery.append(" AND t.created_at >= :startDate");
+            dataQuery.append(" AND t.created_at >= :startDate");
             params.put("startDate", dto.getStartDate());
         }
 
         if (dto.getEndDate() != null) {
-            countQuery.append(" AND t.createdAt <= :endDate");
-            dataQuery.append(" AND t.createdAt <= :endDate");
+            countQuery.append(" AND t.created_at <= :endDate");
+            dataQuery.append(" AND t.created_at <= :endDate");
             params.put("endDate", dto.getEndDate());
         }
     }
@@ -105,7 +106,7 @@ public class TransportDao {
         return response;
     }
 
-    public Map<String, Object> getTransportDetail(Long transportId) {
+    public Map<String, Object> getTransportDetail(Long transportId, Long clientId) {
         String query = """
             SELECT 
                 t.id,
@@ -114,14 +115,15 @@ public class TransportDao {
                 t.total_bags as totalBags,
                 c.id as customerId,
                 c.name as customerName
-            FROM transport t
-            LEFT JOIN customer c ON t.customer_id = c.id
+            FROM (SELECT * FROM transport WHERE client_id = :clientId) t
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON t.customer_id = c.id
             WHERE t.id = :transportId
         """;
         
         Query nativeQuery = entityManager.createNativeQuery(query);
         nativeQuery.setParameter("transportId", transportId);
-        
+        nativeQuery.setParameter("clientId", clientId);
+
         Object[] result = (Object[]) nativeQuery.getSingleResult();
         
         if (result == null) {
@@ -160,15 +162,15 @@ public class TransportDao {
             FROM transport_bag b
             LEFT JOIN (
                 SELECT * FROM transport_items 
-                WHERE transport_id = :transportId
+                WHERE transport_id = :transportId AND client_id = :clientId
             ) ti ON ti.transport_bag_id = b.id
             LEFT JOIN (
                 SELECT * FROM purchase 
-                WHERE transport_id = :transportId
+                WHERE transport_id = :transportId AND client_id = :clientId
             ) pur ON pur.transport_item_id = ti.id
             LEFT JOIN (
                 SELECT * FROM sale 
-                WHERE transport_id = :transportId
+                WHERE transport_id = :transportId AND client_id = :clientId
             ) s ON s.transport_item_id = ti.id
             WHERE b.transport_id = :transportId
             ORDER BY b.id, ti.id
@@ -176,7 +178,8 @@ public class TransportDao {
         
         Query detailNativeQuery = entityManager.createNativeQuery(detailQuery);
         detailNativeQuery.setParameter("transportId", transportId);
-        
+        detailNativeQuery.setParameter("clientId", clientId);
+
         List<Object[]> detailResults = detailNativeQuery.getResultList();
         Map<Long, Map<String, Object>> bagsMap = new HashMap<>();
         
@@ -232,23 +235,23 @@ public class TransportDao {
                 COALESCE(SUM(s.total_amount - pur.total_amount), 0) as total_profit
             FROM (
                 SELECT id FROM transport_items 
-                WHERE transport_id = :transportId
+                WHERE transport_id = :transportId AND client_id = :clientId
             ) ti
             LEFT JOIN (
                 SELECT transport_item_id, total_amount 
                 FROM purchase 
-                WHERE transport_id = :transportId
+                WHERE transport_id = :transportId AND client_id = :clientId
             ) pur ON pur.transport_item_id = ti.id
             LEFT JOIN (
                 SELECT transport_item_id, total_amount 
                 FROM sale 
-                WHERE transport_id = :transportId
+                WHERE transport_id = :transportId AND client_id = :clientId
             ) s ON s.transport_item_id = ti.id
         """;
         
         Query totalsNativeQuery = entityManager.createNativeQuery(totalsQuery);
         totalsNativeQuery.setParameter("transportId", transportId);
-        
+        totalsNativeQuery.setParameter("clientId", clientId);
         Object[] totals = (Object[]) totalsNativeQuery.getSingleResult();
         
         Map<String, Object> summary = new HashMap<>();
@@ -271,7 +274,7 @@ public class TransportDao {
         };
     }
 
-    public Map<String, Object> getTransportPdfData(Long transportId) {
+    public Map<String, Object> getTransportPdfData(Long transportId, Long clientId) {
         String query = """
             SELECT 
                 t.id,
@@ -283,14 +286,14 @@ public class TransportDao {
                 c.address as customerAddress,
                 c.mobile as customerMobile,
                 c.gst as customerGst
-            FROM transport t
-            LEFT JOIN customer c ON t.customer_id = c.id
+            FROM (SELECT * FROM transport WHERE client_id = :clientId) t
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON t.customer_id = c.id
             WHERE t.id = :transportId
         """;
         
         Query nativeQuery = entityManager.createNativeQuery(query);
         nativeQuery.setParameter("transportId", transportId);
-        
+        nativeQuery.setParameter("clientId", clientId);
         Object[] result = (Object[]) nativeQuery.getSingleResult();
         
         if (result == null) {

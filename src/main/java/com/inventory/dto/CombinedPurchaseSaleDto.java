@@ -35,4 +35,5 @@ public class CombinedPurchaseSaleDto {
     private BigDecimal saleDiscount;
     private BigDecimal saleDiscountAmount;
     private BigDecimal saleDiscountPrice;
+    private Long clientId;
 } 

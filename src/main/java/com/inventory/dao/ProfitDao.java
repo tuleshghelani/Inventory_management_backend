@@ -17,20 +17,21 @@ public class ProfitDao {
     @PersistenceContext
     private EntityManager entityManager;
     
-    public Map<String, Object> getDailyProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate) {
+    public Map<String, Object> getDailyProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate, Long clientId) {
         String sql = """
             SELECT 
                 DATE(dp.profit_date) as date,
                 SUM(dp.gross_profit) as gross_profit,
                 SUM(dp.other_expenses) as total_expenses,
                 SUM(dp.net_profit) as net_profit
-            FROM daily_profit dp
+            FROM (SELECT * FROM daily_profit WHERE client_id = :clientId) dp
             WHERE dp.profit_date BETWEEN :startDate AND :endDate
             GROUP BY DATE(dp.profit_date)
             ORDER BY DATE(dp.profit_date)
         """;
         
         Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("clientId", clientId);
         query.setParameter("startDate", startDate);
         query.setParameter("endDate", endDate);
         
@@ -54,7 +55,7 @@ public class ProfitDao {
         return response;
     }
     
-    public Map<String, Object> getProductWiseProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate) {
+    public Map<String, Object> getProductWiseProfitSummary(OffsetDateTime startDate, OffsetDateTime endDate, Long clientId) {
         String sql = """
             SELECT 
                 p.id as product_id,
@@ -62,16 +63,17 @@ public class ProfitDao {
                 SUM(dp.gross_profit) as gross_profit,
                 SUM(dp.other_expenses) as total_expenses,
                 SUM(dp.net_profit) as net_profit
-            FROM daily_profit dp
-            JOIN sale s ON dp.sale_id = s.id
-            JOIN purchase pu ON s.purchase_id = pu.id
-            JOIN product p ON pu.product_id = p.id
+            FROM (SELECT * FROM daily_profit WHERE client_id = :clientId) dp
+            JOIN (SELECT * FROM sale WHERE client_id = :clientId) s ON dp.sale_id = s.id
+            JOIN (SELECT * FROM purchase WHERE client_id = :clientId) pu ON s.purchase_id = pu.id
+            JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pu.product_id = p.id
             WHERE dp.profit_date BETWEEN :startDate AND :endDate
             GROUP BY p.id, p.name
             ORDER BY SUM(dp.net_profit) DESC
         """;
         
         Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("clientId", clientId);
         query.setParameter("startDate", startDate);
         query.setParameter("endDate", endDate);
         

@@ -3,6 +3,7 @@ package com.inventory.service;
 import com.inventory.dto.PowderCoatingProcessPdfDto;
 import com.inventory.entity.Customer;
 import com.inventory.entity.PowderCoatingProcess;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.CustomerRepository;
 import com.inventory.repository.PowderCoatingProcessRepository;
@@ -24,11 +25,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PdfGenerationService {
     private final PowderCoatingProcessRepository processRepository;
     private final CustomerRepository customerRepository;
+    private final UtilityService utilityService;
 
     public byte[] generateEstimatePdf(PowderCoatingProcessPdfDto dto) {
         try {
             Customer customer = customerRepository.findById(dto.getCustomerId())
                 .orElseThrow(() -> new ValidationException("Customer not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(customer.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to view this customer");
+            }
+
 
             List<PowderCoatingProcess> processes = processRepository.findAllById(dto.getProcessIds());
             

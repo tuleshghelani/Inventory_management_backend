@@ -37,7 +37,6 @@ public class AuthService {
         userMaster.setPassword(passwordEncoder.encode(request.getPassword()));
         userMaster.setFirstName(request.getFirstName());
         userMaster.setLastName(request.getLastName());
-        
         return userRepository.save(userMaster);
     }
 

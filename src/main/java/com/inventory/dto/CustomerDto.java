@@ -42,4 +42,5 @@ public class CustomerDto {
     private String search;
     private Integer currentPage = 0;
     private Integer perPageRecord = 10;
+    private Long clientId;
 } 

@@ -38,10 +38,11 @@ public class PurchaseDao {
 
             nativeQuery.append("""
                 FROM purchase p 
-                LEFT JOIN product pr ON p.product_id = pr.id
-                LEFT JOIN category c ON p.category_id = c.id 
+                LEFT JOIN product pr ON p.product_id = pr.id and pr.client_id = :clientId
+                LEFT JOIN category c ON p.category_id = c.id and c.client_id = :clientId
                 WHERE 1=1
-                """);
+                """);;
+            params.put("clientId", dto.getClientId());
 
             appendSearchConditions(nativeQuery, params, dto);
 
