@@ -44,11 +44,15 @@ public class SaleService {
 
             Purchase purchase = purchaseRepository.findById(dto.getPurchaseId())
                 .orElseThrow(() -> new ValidationException("Purchase not found"));
-                
+
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(purchase.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to create sale for this purchase");
+            }
+
             if (purchase.getRemainingQuantity() < dto.getQuantity()) {
                 throw new ValidationException("Insufficient stock. Available: " + purchase.getRemainingQuantity());
             }
-            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
             Sale sale = new Sale();
             sale.setPurchase(purchase);
             sale.setQuantity(dto.getQuantity());

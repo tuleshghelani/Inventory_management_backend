@@ -22,7 +22,8 @@ public class EmployeeDao {
         StringBuilder countSql = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
 
-        countSql.append("SELECT COUNT(e.id) FROM employee e WHERE 1=1");
+        countSql.append("SELECT COUNT(e.id) FROM employee e WHERE e.client_id = :clientId");
+        params.put("clientId", dto.getClientId());
         appendSearchConditions(countSql, params, dto);
 
         Query countQuery = entityManager.createNativeQuery(countSql.toString());
@@ -37,8 +38,9 @@ public class EmployeeDao {
                 e.address, e.designation, e.department,
                 e.status, e.created_at
             FROM employee e
-            WHERE 1=1
+            WHERE e.client_id = :clientId
         """);
+        params.put("clientId", dto.getClientId());
 
         appendSearchConditions(sql, params, dto);
         sql.append("""

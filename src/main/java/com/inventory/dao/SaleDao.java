@@ -23,11 +23,12 @@ public class SaleDao {
 
         countSql.append("""
             SELECT COUNT(s.id)
-            FROM sale s
-            JOIN purchase p ON s.purchase_id = p.id
-            JOIN product pr ON p.product_id = pr.id
+            FROM (SELECT * FROM sale WHERE client_id = :clientId) s
+            JOIN (SELECT * FROM purchase WHERE client_id = :clientId) p ON s.purchase_id = p.id
+            JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
             WHERE 1=1
         """);
+        params.put("clientId", saleDto.getClientId());
 
         appendSearchConditions(countSql, params, saleDto);
         
@@ -51,12 +52,13 @@ public class SaleDao {
                 pr.name as product_name,
                 c.id as category_id,
                 c.name as category_name
-            FROM sale s
-            JOIN purchase p ON s.purchase_id = p.id
-            left JOIN product pr ON p.product_id = pr.id
-            left JOIN category c ON p.category_id = c.id
+            FROM (SELECT * FROM sale WHERE client_id = :clientId) s
+            JOIN (SELECT * FROM purchase WHERE client_id = :clientId) p ON s.purchase_id = p.id
+            left JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
+            left JOIN (SELECT * FROM category WHERE client_id = :clientId) c ON p.category_id = c.id
             WHERE 1=1
         """);
+        params.put("clientId", saleDto.getClientId());
 
         appendSearchConditions(sql, params, saleDto);
         sql.append(" ORDER BY s.id DESC LIMIT :pageSize OFFSET :offset");

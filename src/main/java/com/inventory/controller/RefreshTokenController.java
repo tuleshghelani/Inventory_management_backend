@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/refresh-token")
-@CrossOrigin(origins = "*", allowedHeaders = "*")user
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RequiredArgsConstructor
 public class RefreshTokenController {
     private final RefreshTokenService refreshTokenService;
