@@ -67,15 +67,15 @@ public class EmployeeOrderDao {
         }
         
         if (dto.getStartDate() != null) {
-            countQuery.append(" AND eo.createdAt >= :startDate");
-            dataQuery.append(" AND eo.createdAt >= :startDate");
+            countQuery.append(" AND eo.created_at >= :startDate");
+            dataQuery.append(" AND eo.created_at >= :startDate");
             params.put("startDate", dto.getStartDate());
         }
 
         if (dto.getEndDate() != null) {
-            countQuery.append(" AND eo.createdAt <= :endDate");
-            dataQuery.append(" AND eo.createdAt <= :endDate");
-            params.put("endDate", dto.getEndDate());
+            countQuery.append(" AND eo.created_at <= :endDate");
+            dataQuery.append(" AND eo.created_at <= :endDate");
+            params.put("endDate", dto.getEndDate().plusDays(1));
         }
         
         if (StringUtils.hasText(dto.getStatus())) {
