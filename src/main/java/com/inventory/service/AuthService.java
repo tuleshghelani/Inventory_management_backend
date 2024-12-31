@@ -1,13 +1,10 @@
 package com.inventory.service;
 
-import com.inventory.dto.ApiResponse;
-import com.inventory.dto.LoginRequest;
-import com.inventory.dto.RegisterRequest;
-import com.inventory.entity.UserMaster;
-import com.inventory.exception.ValidationException;
-import com.inventory.repository.UserRepository;
-import com.inventory.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,7 +13,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import com.inventory.dto.LoginRequest;
+import com.inventory.dto.RegisterRequest;
+import com.inventory.entity.UserMaster;
+import com.inventory.exception.ValidationException;
+import com.inventory.repository.UserRepository;
+import com.inventory.security.JwtTokenProvider;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -40,21 +44,33 @@ public class AuthService {
         return userRepository.save(userMaster);
     }
 
-    public String login(LoginRequest request) throws ValidationException {
+    public Map<String, String> login(LoginRequest request) throws ValidationException {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
 
             String token = tokenProvider.generateToken(authentication);
+            String refreshToken = UUID.randomUUID().toString();
 
-            // Save token to database
+            // Save tokens to database
             UserMaster user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+            
             user.setJwtToken(token);
+            user.setRefreshToken(refreshToken);
+            user.setRefreshTokenExpiry(OffsetDateTime.now().plusDays(7)); // 7 days expiry
             user.setUpdatedAt(OffsetDateTime.now());
             userRepository.save(user);
-            return token;
+
+            Map<String, String> tokens = new HashMap<>();
+            tokens.put("accessToken", token);
+            tokens.put("refreshToken", refreshToken);
+            tokens.put("firstName", user.getFirstName());
+            tokens.put("lastName", user.getLastName());
+            tokens.put("email", user.getEmail());
+            
+            return tokens;
         } catch (ValidationException ve) {
             ve.printStackTrace();
             throw ve;

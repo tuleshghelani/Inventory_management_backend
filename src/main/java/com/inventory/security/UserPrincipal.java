@@ -30,6 +30,14 @@ public class UserPrincipal implements UserDetails {
                 .build();
     }
 
+    
+    public UserPrincipal(UserMaster user) {
+        this.id = user.getId();
+        this.email = user.getEmail();
+        this.password = user.getPassword();
+        this.authorities = Collections.emptyList();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
