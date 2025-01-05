@@ -21,7 +21,7 @@ public class PriceDao {
         String query = """
                 SELECT\s
                     COALESCE(p.purchase_amount, 0) AS last_purchase_price,
-                    COALESCE(s.unit_price, 0) AS last_sale_price
+                    COALESCE(s.unit_price, p.sale_amount, 0) AS last_sale_price
                 FROM\s
                     (SELECT * from product p where p.id = :productId) p
                 FULL OUTER JOIN\s
