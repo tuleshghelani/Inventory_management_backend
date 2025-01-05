@@ -47,6 +47,8 @@ public class TransportDto {
     public static class BagDto {
         private Long id;
         private BigDecimal weight;
+        private Integer numberOfBags;
+        private BigDecimal totalBagWeight;
         private List<BagItemDto> items;
     }
     

@@ -28,6 +28,9 @@ public class TransportItem {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
     
+    @Column(name = "per_bag_quantity")
+    private Integer perBagQuantity;
+    
     @Column(name = "remarks", length = 512)
     private String remarks;
     

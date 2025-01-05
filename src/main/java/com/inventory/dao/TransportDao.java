@@ -10,8 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -143,6 +145,8 @@ public class TransportDao {
             SELECT 
                 b.id as bag_id,
                 b.weight as bag_weight,
+                b.number_of_bags as number_of_bags,
+                b.total_bag_weight as total_bag_weight,
                 ti.id as item_id,
                 ti.product_id,
                 ti.quantity,
@@ -181,44 +185,50 @@ public class TransportDao {
         detailNativeQuery.setParameter("clientId", clientId);
 
         List<Object[]> detailResults = detailNativeQuery.getResultList();
-        Map<Long, Map<String, Object>> bagsMap = new HashMap<>();
+        Map<Long, Map<String, Object>> bagsMap = new LinkedHashMap<>();
         
         for (Object[] row : detailResults) {
             Long bagId = ((Number) row[0]).longValue();
+            int i =4;
             
             Map<String, Object> bag = bagsMap.computeIfAbsent(bagId, k -> {
                 Map<String, Object> newBag = new HashMap<>();
                 newBag.put("id", row[0]);
                 newBag.put("weight", row[1]);
+                newBag.put("numberOfBags", row[2]);
+                newBag.put("totalBagWeight", row[3]);
                 newBag.put("items", new ArrayList<>());
                 return newBag;
             });
             
             if (row[2] != null) {  // If there are items
                 Map<String, Object> item = new HashMap<>();
-                item.put("id", row[2]);
-                item.put("productId", row[3]);
-                item.put("quantity", row[4]);
-                item.put("remarks", row[5]);
+                item.put("id", row[i++]);
+                item.put("productId", row[i++]);
+                Integer numberOfBags = (Integer) row[2];
+                Integer quantity = (Integer) row[i++];
+                item.put("quantity", BigDecimal.valueOf(quantity).divide(BigDecimal.valueOf(numberOfBags)));
+                item.put("totalQuantity", BigDecimal.valueOf(quantity));
+                item.put("remarks", row[i++]);
                 
                 // Add purchase details
                 Map<String, Object> purchase = new HashMap<>();
-                purchase.put("id", row[6]);
-                purchase.put("unitPrice", row[7]);
-                purchase.put("discount", row[8]);
-                purchase.put("discountAmount", row[9]);
-                purchase.put("discountPrice", row[10]);
-                purchase.put("totalAmount", row[11]);
+                purchase.put("id", row[i++]);
+                purchase.put("unitPrice", row[i++]);
+                purchase.put("discount", row[i++]);
+                purchase.put("discountAmount", row[i++]);
+                purchase.put("discountPrice", row[i++]);
+                purchase.put("totalAmount", row[i++]);
                 item.put("purchase", purchase);
                 
                 // Add sale details
                 Map<String, Object> sale = new HashMap<>();
-                sale.put("id", row[12]);
-                sale.put("unitPrice", row[13]);
-                sale.put("discount", row[14]);
-                sale.put("discountAmount", row[15]);
-                sale.put("discountPrice", row[16]);
-                sale.put("totalAmount", row[17]);
+                sale.put("id", row[i++]);
+                sale.put("unitPrice", row[i++]);
+                sale.put("discount", row[i++]);
+                sale.put("discountAmount", row[i++]);
+                sale.put("discountPrice", row[i++]);
+                sale.put("totalAmount", row[i++]);
                 item.put("sale", sale);
                 
                 ((List<Map<String, Object>>) bag.get("items")).add(item);

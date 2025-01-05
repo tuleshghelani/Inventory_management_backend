@@ -69,10 +69,10 @@ public class TransportService {
             }
 
             BigDecimal totalWeight = dto.getBags().stream()
-                .map(TransportDto.BagDto::getWeight)
+                .map(bag -> bag.getWeight().multiply(BigDecimal.valueOf(bag.getNumberOfBags())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
             transport.setTotalWeight(totalWeight);
-            transport.setTotalBags(dto.getBags().size());
+            transport.setTotalBags(dto.getBags().stream().map(TransportDto.BagDto::getNumberOfBags).reduce(0, Integer::sum));
             transport.setClient(currentUser.getClient());
             transport.setCreatedBy(currentUser);
 
@@ -100,6 +100,9 @@ public class TransportService {
         for (TransportDto.BagDto bag : dto.getBags()) {
             if (bag.getWeight() == null || bag.getWeight().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new ValidationException("Valid weight is required for each bag");
+            }
+            if (bag.getNumberOfBags() == null || bag.getNumberOfBags() < 1) {
+                throw new ValidationException("Number of bags must be at least 1");
             }
             if (bag.getItems() == null || bag.getItems().isEmpty()) {
                 throw new ValidationException("At least one item is required in each bag");
@@ -238,6 +241,8 @@ public class TransportService {
             TransportBag bag = new TransportBag();
             bag.setTransport(transport);
             bag.setWeight(bagDto.getWeight());
+            bag.setNumberOfBags(bagDto.getNumberOfBags());
+            bag.setTotalBagWeight(bagDto.getWeight().multiply(BigDecimal.valueOf(bagDto.getNumberOfBags())));
             bag.setClient(currentUser.getClient());
             bag = transportBagRepository.save(bag);
             
@@ -249,6 +254,7 @@ public class TransportService {
                 item.setProduct(productRepository.findById(itemDto.getProductId())
                     .orElseThrow(() -> new ValidationException("Product not found")));
                 item.setQuantity(itemDto.getQuantity());
+                item.setPerBagQuantity(itemDto.getQuantity() / bagDto.getNumberOfBags());
                 item.setRemarks(itemDto.getRemarks());
                 item.setClient(currentUser.getClient());
                 item = transportItemRepository.save(item);

@@ -26,7 +26,13 @@ public class TransportBag {
     private Long id;
     
     @Column(name = "weight", nullable = false, precision = 10, scale = 3)
-    private BigDecimal weight;
+    private BigDecimal weight; //per bag weight
+
+    @Column(name = "number_of_bags", columnDefinition = "int4 default 1")
+    private Integer numberOfBags = 1;
+    
+    @Column(name = "total_bag_weight", precision = 10, scale = 3)
+    private BigDecimal totalBagWeight;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_id", nullable = false, referencedColumnName = "id", 
