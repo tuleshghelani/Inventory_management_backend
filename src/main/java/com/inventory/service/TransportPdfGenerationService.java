@@ -120,14 +120,19 @@ public class TransportPdfGenerationService {
     private void addBagsTable(Document document, List<Map<String, Object>> bags) throws DocumentException {
         Font boldFont = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD);
         Font normalFont = new Font(Font.FontFamily.TIMES_ROMAN, 12);
-        int bagNumber = 1;
+        int currentBagNumber = 1;
 
         for (Map<String, Object> bag : bags) {
-            // Bag header with styled background
             PdfPTable bagHeader = new PdfPTable(2);
             bagHeader.setWidthPercentage(100);
             
-            PdfPCell bagTitleCell = new PdfPCell(new Phrase("Bag #" + bagNumber, boldFont));
+            // Calculate bag number range
+            int numberOfBags = ((Number) bag.get("numberOfBags")).intValue();
+            String bagNumberText = numberOfBags > 1 
+                ? "Bag #" + currentBagNumber + "-" + (currentBagNumber + numberOfBags - 1)
+                : "Bag #" + currentBagNumber;
+            
+            PdfPCell bagTitleCell = new PdfPCell(new Phrase(bagNumberText, boldFont));
             bagTitleCell.setColspan(2);
             bagTitleCell.setBackgroundColor(new BaseColor(230, 230, 250));
             bagTitleCell.setPadding(5);
@@ -156,13 +161,28 @@ public class TransportPdfGenerationService {
             List<Map<String, Object>> items = (List<Map<String, Object>>) bag.get("items");
             for (Map<String, Object> item : items) {
                 addCell(itemsTable, item.get("productName").toString(), normalFont, Element.ALIGN_LEFT);
-                addCell(itemsTable, item.get("quantity").toString(), normalFont, Element.ALIGN_RIGHT);
+                
+                // Calculate quantity per bag
+                Object quantityObj = item.get("quantity");
+                Object numberOfBagsObj = bag.get("numberOfBags");
+                String quantityDisplay;
+                
+                if (numberOfBagsObj != null && ((Number) numberOfBagsObj).intValue() > 0) {
+                    double quantity = ((Number) quantityObj).doubleValue();
+                    int tempNumberOfBags = ((Number) numberOfBagsObj).intValue();
+                    quantityDisplay = String.format("%.2f", quantity / tempNumberOfBags);
+                } else {
+                    quantityDisplay = quantityObj.toString();
+                }
+                
+                addCell(itemsTable, quantityDisplay, normalFont, Element.ALIGN_RIGHT);
                 addCell(itemsTable, item.get("remarks").toString(), normalFont, Element.ALIGN_LEFT);
             }
 
             document.add(itemsTable);
             document.add(Chunk.NEWLINE);
-            bagNumber++;
+
+            currentBagNumber += numberOfBags;
         }
     }
 

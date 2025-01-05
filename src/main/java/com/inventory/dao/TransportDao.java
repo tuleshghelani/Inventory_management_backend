@@ -201,7 +201,7 @@ public class TransportDao {
                 return newBag;
             });
             
-            if (row[2] != null) {  // If there are items
+            if (row[4] != null) {  // If there are items
                 Map<String, Object> item = new HashMap<>();
                 item.put("id", row[i++]);
                 item.put("productId", row[i++]);
@@ -325,6 +325,8 @@ public class TransportDao {
             SELECT 
                 b.id as bag_id,
                 b.weight as bag_weight,
+                b.number_of_bags as number_of_bags,
+                b.total_bag_weight as total_bag_weight,
                 ti.id as item_id,
                 p.id as product_id,
                 p.name as product_name,
@@ -350,17 +352,19 @@ public class TransportDao {
                 Map<String, Object> newBag = new HashMap<>();
                 newBag.put("id", row[0]);
                 newBag.put("weight", row[1]);
+                newBag.put("numberOfBags", row[2]);
+                newBag.put("totalBagWeight", row[3]);
                 newBag.put("items", new ArrayList<>());
                 return newBag;
             });
             
-            if (row[2] != null) {  // If there are items
+            if (row[4] != null) {  // If there are items
                 Map<String, Object> item = new HashMap<>();
-                item.put("id", row[2]);
-                item.put("productId", row[3]);
-                item.put("productName", row[4]);
-                item.put("quantity", row[5]);
-                item.put("remarks", row[6]);
+                item.put("id", row[4]);
+                item.put("productId", row[5]);
+                item.put("productName", row[6]);
+                item.put("quantity", row[7]);
+                item.put("remarks", row[8]);
                 
                 ((List<Map<String, Object>>) bag.get("items")).add(item);
             }
