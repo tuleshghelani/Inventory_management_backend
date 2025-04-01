@@ -31,6 +31,9 @@ public class Client {
     
     @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
+
+    @Column(name = "last_quote_number", columnDefinition = "BIGINT DEFAULT 0")
+    private Long lastQuoteNumber = 0L;
     
     @Column(name = "created_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();
