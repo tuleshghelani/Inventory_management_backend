@@ -27,7 +27,8 @@ public class ProductDao {
                 p.id,
                 p.name,
                 p.purchase_amount,
-                p.sale_amount
+                p.sale_amount,
+                p.tax_percentage
             FROM product p
             WHERE 1=1
         """);
@@ -72,6 +73,7 @@ public class ProductDao {
                 product.put("name", row[1]);
                 product.put("purchase_amount", row[2]);
                 product.put("sale_amount", row[3]);
+                product.put("tax_percentage", row[4]);
 
                 products.add(product);
             }

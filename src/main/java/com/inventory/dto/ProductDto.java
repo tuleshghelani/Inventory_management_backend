@@ -20,6 +20,7 @@ public class ProductDto {
     private BigDecimal purchaseAmount;
     private BigDecimal saleAmount;
     private BigDecimal minimumStock;
+    private BigDecimal taxPercentage;
     private String status;
     private Integer remainingQuantity;
     private Long clientId;
