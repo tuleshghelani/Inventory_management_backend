@@ -45,7 +45,7 @@ public class QuotationController {
         return ResponseEntity.ok(quotationService.getQuotationDetail(request));
     }
 
-    /*@PostMapping("/generate-pdf")
+    @PostMapping("/generate-pdf")
     public ResponseEntity<byte[]> generateQuotationPdf(@RequestBody QuotationDto request) {
         log.debug("Received quotation PDF generation request for ID: {}", request.getId());
         byte[] pdfBytes = quotationService.generateQuotationPdf(request);
@@ -57,7 +57,7 @@ public class QuotationController {
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
-    @PostMapping("/generate-dispatch-slip")
+    /*@PostMapping("/generate-dispatch-slip")
     public ResponseEntity<byte[]> generateDispatchSlipPdf(@RequestBody QuotationDto request) {
         log.debug("Received dispatch slip PDF generation request for ID: {}", request.getId());
         byte[] pdfBytes = quotationService.generateDispatchSlipPdf(request);

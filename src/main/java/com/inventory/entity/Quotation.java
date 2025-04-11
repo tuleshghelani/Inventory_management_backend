@@ -77,9 +77,6 @@ public class Quotation {
     @Column(name = "discounted_price", precision = 19, scale = 2)
     private BigDecimal discountedPrice = BigDecimal.ZERO;
 
-    @Column(name = "loading_charge", precision = 17, scale = 2, columnDefinition = "NUMERIC(17, 2) DEFAULT 0.00"    )
-    private BigDecimal loadingCharge = BigDecimal.ZERO;
-
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     private QuotationStatus status = QuotationStatus.Q;
@@ -92,6 +89,12 @@ public class Quotation {
 
     @Column(name = "terms_conditions", length = 2000)
     private String termsConditions;
+
+    @Column(name = "quotation_discount_percentage", precision = 5, scale = 2, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00")
+    private BigDecimal quotationDiscountPercentage = BigDecimal.ZERO;
+
+    @Column(name = "quotation_discount_amount", precision = 19, scale = 2, columnDefinition = "NUMERIC(19, 2) DEFAULT 0.00")
+    private BigDecimal quotationDiscountAmount = BigDecimal.ZERO;    
 
     @Column(name = "created_at", nullable = false, length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")
     private OffsetDateTime createdAt = OffsetDateTime.now();

@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import com.inventory.dto.request.QuotationItemRequestDto;
 import com.inventory.dto.request.QuotationRequestDto;
@@ -63,6 +62,7 @@ public class QuotationService {
     private final QuotationDao quotationDao;
     private final QuoteNumberGeneratorService quoteNumberGeneratorService;
     private final PdfGenerationService pdfGenerationService;
+    private final QuotationPdfGenerationService quotationPdfGenerationService;
 //    private final ProductQuantityService productQuantityService;
 //    private final QuotationItemCalculationRepository quotationItemCalculationRepository;
 //    private final DispatchSlipPdfService dispatchSlipPdfService;
@@ -114,14 +114,17 @@ public class QuotationService {
             BigDecimal totalAmount = BigDecimal.ZERO;
             BigDecimal taxAmount = BigDecimal.ZERO;
             BigDecimal discountedPrice = BigDecimal.ZERO;
-            BigDecimal loadingCharge = BigDecimal.ZERO;
+            BigDecimal quotationDiscountAmount = BigDecimal.ZERO;
+            BigDecimal quotationDiscountPrice = BigDecimal.ZERO;
 
             for (QuotationItemRequestDto itemDto : request.getItems()) {
-                QuotationItem item = createQuotationItem(itemDto, quotation, currentUser);
+                QuotationItem item = createQuotationItem(itemDto, quotation, currentUser, request);
                 items.add(item);
                 totalAmount = totalAmount.add(item.getFinalPrice());
                 taxAmount = taxAmount.add(item.getTaxAmount());
                 discountedPrice = discountedPrice.add(item.getDiscountPrice());
+                quotationDiscountAmount = quotationDiscountAmount.add(item.getQuotationDiscountAmount());
+                quotationDiscountPrice = quotationDiscountPrice.add(item.getQuotationDiscountPrice());
             }
 
             quotationItemRepository.saveAll(items);
@@ -129,8 +132,9 @@ public class QuotationService {
             totalAmount = totalAmount.setScale(0, RoundingMode.HALF_UP);
             quotation.setTotalAmount(totalAmount);
             quotation.setTaxAmount(taxAmount);
-            quotation.setDiscountedPrice(discountedPrice);
-            quotation.setLoadingCharge(loadingCharge);
+            quotation.setDiscountedPrice(quotationDiscountPrice);
+            quotation.setQuotationDiscountPercentage(request.getQuotationDiscountPercentage());
+            quotation.setQuotationDiscountAmount(quotationDiscountAmount);
             quotationRepository.save(quotation);
 
             return ApiResponse.success("Quotation created successfully");
@@ -177,14 +181,17 @@ public class QuotationService {
             BigDecimal totalAmount = BigDecimal.ZERO;
             BigDecimal taxAmount = BigDecimal.ZERO;
             BigDecimal discountedPrice = BigDecimal.ZERO;
-            BigDecimal loadingCharge = BigDecimal.ZERO;
+            BigDecimal quotationDiscountAmount = BigDecimal.ZERO;
+            BigDecimal quotationDiscountPrice = BigDecimal.ZERO;
 
             for (QuotationItemRequestDto itemDto : request.getItems()) {
-                QuotationItem item = createQuotationItem(itemDto, quotation, currentUser);
+                QuotationItem item = createQuotationItem(itemDto, quotation, currentUser, request);
                 items.add(item);
                 totalAmount = totalAmount.add(item.getFinalPrice());
                 taxAmount = taxAmount.add(item.getTaxAmount());
                 discountedPrice = discountedPrice.add(item.getDiscountPrice());
+                quotationDiscountAmount = quotationDiscountAmount.add(item.getQuotationDiscountAmount());
+                quotationDiscountPrice = quotationDiscountPrice.add(item.getQuotationDiscountPrice());
             }
 
             quotationItemRepository.saveAll(items);
@@ -192,8 +199,9 @@ public class QuotationService {
             totalAmount = totalAmount.setScale(0, RoundingMode.HALF_UP);
             quotation.setTotalAmount(totalAmount);
             quotation.setTaxAmount(taxAmount);
-            quotation.setDiscountedPrice(discountedPrice);
-            quotation.setLoadingCharge(loadingCharge);
+            quotation.setDiscountedPrice(quotationDiscountPrice);
+            quotation.setQuotationDiscountPercentage(request.getQuotationDiscountPercentage());
+            quotation.setQuotationDiscountAmount(quotationDiscountAmount);
             quotationRepository.save(quotation);
 
             return ApiResponse.success("Quotation updated successfully");
@@ -206,7 +214,7 @@ public class QuotationService {
 
     private void validateAndProcessItem(QuotationItemRequestDto itemDto, Product product, UserMaster currentUser) {
         // Set default tax percentage if not provided
-        if (itemDto.getTaxPercentage() == null) {
+        if (product.getTaxPercentage() == null) {
             itemDto.setTaxPercentage(DEFAULT_TAX_PERCENTAGE);
         }
 
@@ -223,7 +231,7 @@ public class QuotationService {
     }
 
 
-    private QuotationItem createQuotationItem(QuotationItemRequestDto itemDto, Quotation quotation, UserMaster currentUser) {
+    private QuotationItem createQuotationItem(QuotationItemRequestDto itemDto, Quotation quotation, UserMaster currentUser, QuotationRequestDto quotationRequestDto) {
         Product product = productRepository.findById(itemDto.getProductId())
                 .orElseThrow(() -> new ValidationException("Product not found"));
 
@@ -239,7 +247,7 @@ public class QuotationService {
         item.setQuantity(itemDto.getQuantity());
         item.setUnitPrice(itemDto.getUnitPrice());
         item.setDiscountPercentage(itemDto.getDiscountPercentage());
-        item.setTaxPercentage(itemDto.getTaxPercentage());
+        item.setTaxPercentage(product.getTaxPercentage());
 
         // Calculate price components
         BigDecimal subTotal = itemDto.getUnitPrice().multiply(itemDto.getQuantity())
@@ -247,13 +255,29 @@ public class QuotationService {
 
         BigDecimal discountAmount = calculatePercentageAmount(subTotal, itemDto.getDiscountPercentage());
         BigDecimal afterDiscount = subTotal.subtract(discountAmount);
-        BigDecimal taxAmount = calculatePercentageAmount(afterDiscount, itemDto.getTaxPercentage());
+        
+        // Apply quotation discount percentage if provided
+        if (quotationRequestDto != null && quotationRequestDto.getQuotationDiscountPercentage() != null) {
+            item.setQuotationDiscountPercentage(quotationRequestDto.getQuotationDiscountPercentage());
+            BigDecimal quotationDiscountAmount = calculatePercentageAmount(afterDiscount, quotationRequestDto.getQuotationDiscountPercentage());
+            item.setQuotationDiscountAmount(quotationDiscountAmount);
+            
+            // Calculate final price after applying quotation discount
+            BigDecimal quotationDiscountPrice = afterDiscount.subtract(quotationDiscountAmount);
+            item.setQuotationDiscountPrice(quotationDiscountPrice);
+            
+            // Calculate tax on the price after applying all discounts
+            BigDecimal taxAmount = calculatePercentageAmount(quotationDiscountPrice, product.getTaxPercentage());
+            item.setTaxAmount(taxAmount);
+            item.setFinalPrice(quotationDiscountPrice.add(taxAmount));
+        } else {
+            BigDecimal taxAmount = calculatePercentageAmount(afterDiscount, product.getTaxPercentage());
+            item.setTaxAmount(taxAmount);
+            item.setFinalPrice(afterDiscount.add(taxAmount));
+        }
 
         item.setDiscountAmount(discountAmount);
         item.setDiscountPrice(afterDiscount);
-        item.setTaxAmount(taxAmount);
-
-        item.setFinalPrice(afterDiscount.add(taxAmount));
         item.setClient(currentUser.getClient());
 
         // Save the item first
@@ -348,6 +372,8 @@ public class QuotationService {
             response.put("customerId", quotation.getCustomer() != null ? quotation.getCustomer().getId() : null);
             response.put("contactNumber", quotation.getContactNumber());
             response.put("address", quotation.getAddress());
+            response.put("quotationDiscountPercentage", quotation.getQuotationDiscountPercentage());
+            response.put("quotationDiscountAmount", quotation.getQuotationDiscountAmount());
 
             // Transform and add items
             List<Map<String, Object>> itemsList = new ArrayList<>();
@@ -364,6 +390,9 @@ public class QuotationService {
                 itemMap.put("taxPercentage", item.getTaxPercentage());
                 itemMap.put("taxAmount", item.getTaxAmount());
                 itemMap.put("finalPrice", item.getFinalPrice());
+                itemMap.put("quotationDiscountPercentage", item.getQuotationDiscountPercentage());
+                itemMap.put("quotationDiscountAmount", item.getQuotationDiscountAmount());
+                itemMap.put("quotationDiscountPrice", item.getQuotationDiscountPrice());
 
                 itemsList.add(itemMap);
             }
@@ -377,12 +406,12 @@ public class QuotationService {
         }
     }
 
-    /*public byte[] generateQuotationPdf(QuotationDto request) {
+    public byte[] generateQuotationPdf(QuotationDto request) {
         try {
             UserMaster currentUser = utilityService.getCurrentLoggedInUser();
             request.setClientId(currentUser.getClient().getId());
             Map<String, Object> quotationData = quotationDao.getQuotationDetail(request);
-            return pdfGenerationService.generateQuotationPdf(quotationData);
+            return quotationPdfGenerationService.generateQuotationPdf(quotationData);
         } catch (ValidationException ve) {
             ve.printStackTrace();
             throw ve;
@@ -390,7 +419,7 @@ public class QuotationService {
             log.error("Error generating quotation PDF", e);
             throw new ValidationException("Failed to generate PDF: " + e.getMessage());
         }
-    }*/
+    }
 
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<?> updateQuotationStatus(QuotationStatusUpdateDto request) {

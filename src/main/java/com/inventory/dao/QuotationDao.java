@@ -145,12 +145,12 @@ public class QuotationDao {
             SELECT 
                 q.id, q.quote_number, q.quote_date, q.valid_until,
                 q.total_amount, q.status, q.remarks, q.terms_conditions,
-                c.id as customer_id, q.customer_name, q.contact_number, q.loading_charge,
+                c.id as customer_id, q.customer_name, q.contact_number,
                 qi.id as item_id, qi.quantity, qi.unit_price,
                 qi.discount_percentage, qi.discount_amount,
                 qi.tax_percentage, qi.tax_amount, qi.final_price,
-                p.id as product_id, p.name as product_name, p.type, qi.calculation_type,
-                qi.discount_price, p.measurement, p.poly_carbonate_type
+                p.id as product_id, p.name as product_name, 
+                qi.discount_price, qi.quotation_discount_price
             FROM (select * from quotation q where q.client_id = :clientId and q.id = :quotationId) q
             LEFT JOIN (select * from customer c where c.client_id = :clientId) c ON q.customer_id = c.id
             LEFT JOIN (select * from quotation_items qi where qi.client_id = :clientId) qi ON q.id = qi.quotation_id
@@ -176,37 +176,35 @@ public class QuotationDao {
 
         // Set quotation details from first row
         Object[] firstRow = results.get(0);
-        quotation.put("id", firstRow[0]);
-        quotation.put("quoteNumber", firstRow[1]);
-        quotation.put("quoteDate", firstRow[2]);
-        quotation.put("validUntil", firstRow[3]);
-        quotation.put("totalAmount", firstRow[4]);
-        quotation.put("status", firstRow[5]);
-        quotation.put("remarks", firstRow[6]);
-        quotation.put("termsConditions", firstRow[7]);
-        quotation.put("customerId", firstRow[8]);
-        quotation.put("customerName", firstRow[9]);
-        quotation.put("contactNumber", firstRow[10]);
-        quotation.put("loadingCharge", firstRow[11]);
+        int index = 0;
+        quotation.put("id", firstRow[index++]);
+        quotation.put("quoteNumber", firstRow[index++]);
+        quotation.put("quoteDate", firstRow[index++]);
+        quotation.put("validUntil", firstRow[index++]);
+        quotation.put("totalAmount", firstRow[index++]);
+        quotation.put("status", firstRow[index++]);
+        quotation.put("remarks", firstRow[index++]);
+        quotation.put("termsConditions", firstRow[index++]);
+        quotation.put("customerId", firstRow[index++]);
+        quotation.put("customerName", firstRow[index++]);
+        quotation.put("contactNumber", firstRow[index++]);
 
         // Process items
         for (Object[] row : results) {
+            index = 11;
             Map<String, Object> item = new HashMap<>();
-            item.put("id", row[12]);
-            item.put("quantity", row[13]);
-            item.put("unitPrice", row[14]);
-            item.put("discountPercentage", row[15]);
-            item.put("discountAmount", row[16]);
-            item.put("taxPercentage", row[17]);
-            item.put("taxAmount", row[18]);
-            item.put("finalPrice", row[19]);
-            item.put("productId", row[20]);
-            item.put("productName", row[21]);
-            item.put("productType", row[22]);
-            item.put("calculationType", row[23]);
-            item.put("discountPrice", row[24]);
-            item.put("measurement", row[25]);
-            item.put("polyCarbonateType", row[26]);
+            item.put("id", row[index++]);
+            item.put("quantity", row[index++]);
+            item.put("unitPrice", row[index++]);
+            item.put("discountPercentage", row[index++]);
+            item.put("discountAmount", row[index++]);
+            item.put("taxPercentage", row[index++]);
+            item.put("taxAmount", row[index++]);
+            item.put("finalPrice", row[index++]);
+            item.put("productId", row[index++]);
+            item.put("productName", row[index++]);
+            item.put("discountPrice", row[index++]);
+            item.put("quotationDiscountPrice", row[index++]);
             items.add(item);
         }
 

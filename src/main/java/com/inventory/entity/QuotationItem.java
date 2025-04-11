@@ -61,6 +61,15 @@ public class QuotationItem {
     @Column(name = "discount_price", precision = 19, scale = 2, columnDefinition = "NUMERIC(19, 2) DEFAULT 0.00"    )
     private BigDecimal discountPrice = BigDecimal.ZERO;
 
+    @Column(name = "quotation_discount_percentage", precision = 5, scale = 2, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00")
+    private BigDecimal quotationDiscountPercentage = BigDecimal.ZERO;
+
+    @Column(name = "quotation_discount_amount", precision = 19, scale = 2, columnDefinition = "NUMERIC(19, 2) DEFAULT 0.00")
+    private BigDecimal quotationDiscountAmount = BigDecimal.ZERO;
+
+    @Column(name = "quotation_discount_price", precision = 19, scale = 2, columnDefinition = "NUMERIC(19, 2) DEFAULT 0.00"    )
+    private BigDecimal quotationDiscountPrice = BigDecimal.ZERO;
+
     @Column(name = "tax_percentage", precision = 5, scale = 2, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00")
     private BigDecimal taxPercentage = BigDecimal.ZERO;
 

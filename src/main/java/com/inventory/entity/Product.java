@@ -64,7 +64,7 @@ public class Product {
     @Column(name = "minimum_stock", precision = 10, scale = 2)
     private BigDecimal minimumStock;
 
-    @Column(name = "tax_percentage", precision = 5, scale = 2, columnDefinition = "numeric(5,2) DEFAULT 18 ")
+    @Column(name = "tax_percentage", nullable = false, precision = 5, scale = 2, columnDefinition = "numeric(5,2) DEFAULT 18 ")
     private BigDecimal taxPercentage = BigDecimal.valueOf(18);
 
     @ManyToOne(fetch = FetchType.LAZY)

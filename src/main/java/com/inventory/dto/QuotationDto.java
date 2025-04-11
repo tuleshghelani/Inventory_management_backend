@@ -35,6 +35,8 @@ public class QuotationDto {
 
     private String remarks;
     private String termsConditions;
+    private BigDecimal quotationDiscountPercentage;
+    private BigDecimal quotationDiscountAmount;
     private List<QuotationItemRequestDto> items;
 
     // Search parameters
