@@ -463,6 +463,11 @@ public class QuotationService {
                 }
                 break;
             case P:
+                if (newStatus != QuotationStatus.PC) {
+                    throw new ValidationException("Processing quote can only be Completed");
+                }
+                break;
+            case PC:
                 if (newStatus != QuotationStatus.C) {
                     throw new ValidationException("Processing quote can only be Completed");
                 }

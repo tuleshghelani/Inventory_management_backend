@@ -10,6 +10,7 @@ public enum QuotationStatus {
     D("Declined"),
     R("Ready"),
     P("Processing"),
+    PC("Packaging"),
     C("Completed");
 
     public final String text;
