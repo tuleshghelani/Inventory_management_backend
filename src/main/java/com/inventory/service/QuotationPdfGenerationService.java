@@ -240,18 +240,18 @@ public class QuotationPdfGenerationService {
         document.add(itemsTitle);
         
         // Create styled table
-        Table table = new Table(new float[]{2, 4, 2, 2, 2})
+        Table table = new Table(new float[]{1, 4, 2, 2, 1, 2})
                 .useAllAvailableWidth()
                 .setMarginTop(5);
 
         // Add headers with styling
-        Stream.of("Sr. No.", "ITEM NAME", "QUANTITY", "PRICE", "TOTAL AMOUNT")
+        Stream.of("No.", "ITEM NAME", "QUANTITY", "PRICE", "DISCOUNT.(%)", "TOTAL AMOUNT")
                 .forEach(title -> table.addHeaderCell(
                         new Cell().add(new Paragraph(title))
                                 .setBackgroundColor(SECONDARY_COLOR)
                                 .setFontColor(TEXT_LIGHT)
                                 .setBold()
-                                .setPadding(8)
+                                .setPadding(0)
                 ));
 
         // Add items with alternating row colors for look
@@ -275,12 +275,16 @@ public class QuotationPdfGenerationService {
                     "\n " + measurement + "(approx.)" : "\n" + measurement;
 
             table.addCell(new Cell()
-                    .add(new Paragraph(item.get("quantity").toString() + " " + displayMeasurement))
+                    .add(new Paragraph(((BigDecimal) item.get("quantity")).setScale(0, RoundingMode.DOWN).toString() + " " + displayMeasurement))
                     .setBackgroundColor(rowColor));
                     
             table.addCell(new Cell()
                     .add(new Paragraph(item.get("unitPrice").toString()))
                     .setBackgroundColor(rowColor));
+                    
+            table.addCell(new Cell()
+                .add(new Paragraph(item.get("discountPercentage").toString()))
+                .setBackgroundColor(rowColor));
                     
             table.addCell(new Cell()
                     .add(new Paragraph(item.get("discountPrice").toString()))
@@ -306,10 +310,17 @@ public class QuotationPdfGenerationService {
         
         // Add styled rows for totals
         addTotalRow(totalsTable, "SUBTOTAL", totalAmount.toString() + "/-", false);
+
+        // Quotation discount
+        BigDecimal quotationDiscountPercentage = ((BigDecimal) quotationData.get("quotationDiscountPercentage"));
+        addTotalRow(totalsTable, "Quotation discount (%)", quotationDiscountPercentage.toString() + "%", false);
+
+        // Quotation discount in Rs
+        BigDecimal quotationDiscountAmount = ((BigDecimal) quotationData.get("quotationDiscountAmount"));
+        addTotalRow(totalsTable, "Quotation discount (Rs.)", quotationDiscountAmount.toString() + "/-", false);
         
         // GST calculation
-        BigDecimal gstAmount = totalAmount.multiply(BigDecimal.valueOf(18))
-                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        BigDecimal gstAmount = ((BigDecimal) quotationData.get("quotationTaxAmount")).setScale(0, RoundingMode.HALF_UP);
         addTotalRow(totalsTable, "GST 18 % (SGST 9% CGST 9%)", gstAmount.toString() + "/-", false);
         
         // Grand total with prominent styling
@@ -683,7 +694,7 @@ public class QuotationPdfGenerationService {
                         .setFontSize(8)
                         .setFontColor(TEXT_LIGHT))
                 .setBorder(Border.NO_BORDER)
-                .setTextAlignment(TextAlignment.CENTER);
+                .setTextAlignment(TextAlignment.LEFT);
                 
         // Right - Website or additional info
         Cell websiteCell = new Cell()
@@ -693,7 +704,7 @@ public class QuotationPdfGenerationService {
                 .setBorder(Border.NO_BORDER)
                 .setTextAlignment(TextAlignment.RIGHT);
 
-        footerTable.addCell(pageCell);
+        // footerTable.addCell(pageCell);
         footerTable.addCell(contactCell);
         footerTable.addCell(websiteCell);
 

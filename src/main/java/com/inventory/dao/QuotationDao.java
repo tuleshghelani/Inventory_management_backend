@@ -146,6 +146,8 @@ public class QuotationDao {
                 q.id, q.quote_number, q.quote_date, q.valid_until,
                 q.total_amount, q.status, q.remarks, q.terms_conditions,
                 c.id as customer_id, q.customer_name, q.contact_number,
+                q.tax_amount as quotation_tax_amount, q.quotation_discount_percentage, 
+                q.quotation_discount_amount,
                 qi.id as item_id, qi.quantity, qi.unit_price,
                 qi.discount_percentage, qi.discount_amount,
                 qi.tax_percentage, qi.tax_amount, qi.final_price,
@@ -188,10 +190,13 @@ public class QuotationDao {
         quotation.put("customerId", firstRow[index++]);
         quotation.put("customerName", firstRow[index++]);
         quotation.put("contactNumber", firstRow[index++]);
+        quotation.put("quotationTaxAmount", firstRow[index++]);
+        quotation.put("quotationDiscountPercentage", firstRow[index++]);
+        quotation.put("quotationDiscountAmount", firstRow[index++]);
 
         // Process items
         for (Object[] row : results) {
-            index = 11;
+            index = 14;
             Map<String, Object> item = new HashMap<>();
             item.put("id", row[index++]);
             item.put("quantity", row[index++]);
