@@ -11,7 +11,8 @@ public enum QuotationStatus {
     R("Ready"),
     P("Processing"),
     PC("Packaging"),
-    C("Completed");
+    C("Completed"),
+    I("Invoiced");
 
     public final String text;
     public final String value;

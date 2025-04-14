@@ -87,6 +87,24 @@ public class Sale {
     private Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quotation_id",
+            foreignKey = @ForeignKey(name = "fk_sale_quotation_id_quotation_id"))
+    private Quotation quotation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "quotation_item_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_quotation_item_id_quotation_item_id"))
+    private QuotationItem quotationItem;
+
+    @Column(name = "quotation_discount_percentage", precision = 5, scale = 2, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00")
+    private BigDecimal quotationDiscountPercentage = BigDecimal.ZERO;
+
+    @Column(name = "quotation_discount_amount", precision = 19, scale = 2, columnDefinition = "NUMERIC(19, 2) DEFAULT 0.00")
+    private BigDecimal quotationDiscountAmount = BigDecimal.ZERO;
+
+    @Column(name = "quotation_discount_price", precision = 10, scale = 2)
+    private BigDecimal quotationDiscountPrice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_sale_transport_id_transport_id"))
     private Transport transport;
 

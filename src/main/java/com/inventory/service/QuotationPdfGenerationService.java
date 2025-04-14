@@ -508,7 +508,7 @@ public class QuotationPdfGenerationService {
 
         // GST Number with styling
         Table gstTable = new Table(1).useAllAvailableWidth();
-        Cell gstCell = new Cell()
+        /*Cell gstCell = new Cell()
                 .add(new Paragraph("GST No: 24AAMFJ9388A1Z4")
                         .setFontColor(TEXT_DARK)
                         .setFontSize(12)
@@ -518,7 +518,7 @@ public class QuotationPdfGenerationService {
                 .setPadding(10);
         gstTable.addCell(gstCell);
         document.add(gstTable);
-        document.add(new Paragraph("\n"));
+        document.add(new Paragraph("\n"));*/
 
         // Bank Details Section with styling
         Table bankHeaderTable = new Table(1).useAllAvailableWidth();
@@ -533,24 +533,55 @@ public class QuotationPdfGenerationService {
         bankHeaderTable.addCell(bankHeaderCell);
         document.add(bankHeaderTable);
         
-        // Bank name
-        document.add(new Paragraph("CENTRAL BANK OF INDIA")
-                .setFontColor(SECONDARY_COLOR)
-                .setBold()
-                .setFontSize(14)
-                .setMarginTop(10)
-                .setTextAlignment(TextAlignment.CENTER));
-
-        // Bank details in styled table
+        // Create a table with 2 columns for bank details and payment image
+        Table bankDetailsTable = new Table(2).useAllAvailableWidth();
+        bankDetailsTable.setMarginTop(10);
+        
+        // Left column - Bank details
+        Cell bankDetailsCell = new Cell().setBorder(new SolidBorder(SECONDARY_COLOR, 1));
         Table bankTable = new Table(2).useAllAvailableWidth();
-        bankTable.setMarginTop(10);
-        bankTable.setBorder(new SolidBorder(SECONDARY_COLOR, 1));
         
-        addStyledBankDetail(bankTable, "A/C NO:", "123456789");
-        addStyledBankDetail(bankTable, "IFSC CODE:", "123456789");
+        addStyledBankDetail(bankTable, "GST: ", "24AAMFJ9388A1Z4");
+        addStyledBankDetail(bankTable, "BANK: ", "ICICI INDIA");
+        addStyledBankDetail(bankTable, "A/C NAME:", "JK INDUSTIES");
+        addStyledBankDetail(bankTable, "A/C NO:", "820205000035");
+        addStyledBankDetail(bankTable, "IFSC CODE:", "ICICI0006248/ ICICI0008202");
         addStyledBankDetail(bankTable, "BRANCH:", "RAJKOT");
+        addStyledBankDetail(bankTable, "UPI:", "MSJKINDUSTRIES...@icici\n MSJKINDUSTRIES.eazypay3@icici");
+
+        bankDetailsCell.add(bankTable);
+        bankDetailsCell.setBackgroundColor(BACKGROUND_LIGHT);
+        bankDetailsCell.setPadding(10);
         
-        document.add(bankTable);
+        // Right column - Payment image
+        Cell paymentImageCell = new Cell().setBorder(new SolidBorder(SECONDARY_COLOR, 1));
+        paymentImageCell.setPadding(10);
+        
+        try {
+            InputStream imageStream = getClass().getClassLoader().getResourceAsStream("quotation/payment.jpg");
+            if (imageStream == null) {
+                log.error("Image not found: quotation/payment.jpg");
+                throw new FileNotFoundException("Image not found: quotation/payment.jpg");
+            }
+            
+            ImageData imageData = ImageDataFactory.create(imageStream.readAllBytes());
+            Image img = new Image(imageData);
+            img.setAutoScale(true);
+            img.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            
+            paymentImageCell.add(img);
+        } catch (Exception e) {
+            log.error("Error loading payment image: quotation/payment.jpg", e);
+            paymentImageCell.add(new Paragraph("Payment Image Not Available")
+                    .setFontColor(PRIMARY_COLOR)
+                    .setTextAlignment(TextAlignment.CENTER));
+        }
+        
+        // Add cells to table
+        bankDetailsTable.addCell(bankDetailsCell);
+        bankDetailsTable.addCell(paymentImageCell);
+        
+        document.add(bankDetailsTable);
 
         // Terms and Conditions Section with styling
         document.add(new Paragraph("\n"));
@@ -606,15 +637,13 @@ public class QuotationPdfGenerationService {
         // Create styled term with icon effect
         Table termTable = new Table(2).useAllAvailableWidth();
         
-        // Number cell styled as a badge
+        // Number cell styled as a badge - reduced size
         Cell numberCell = new Cell()
                 .add(new Paragraph(number)
-                        .setFontColor(TEXT_LIGHT)
+                        .setFontColor(PRIMARY_COLOR)
                         .setBold()
                         .setTextAlignment(TextAlignment.CENTER))
                 .setBackgroundColor(PRIMARY_COLOR)
-                .setWidth(30)
-                .setHeight(30)
                 .setBorder(Border.NO_BORDER)
                 .setVerticalAlignment(VerticalAlignment.MIDDLE);
                 

@@ -13,6 +13,7 @@ import java.util.Objects;
 import com.inventory.dto.request.QuotationItemRequestDto;
 import com.inventory.dto.request.QuotationRequestDto;
 import com.inventory.dto.request.QuotationStatusUpdateDto;
+import com.inventory.entity.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,17 +21,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.inventory.dao.QuotationDao;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.QuotationDto;
-import com.inventory.entity.Customer;
-import com.inventory.entity.Product;
-import com.inventory.entity.Quotation;
-import com.inventory.entity.QuotationItem;
-import com.inventory.entity.UserMaster;
 import com.inventory.enums.QuotationStatus;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.CustomerRepository;
 import com.inventory.repository.ProductRepository;
 import com.inventory.repository.QuotationItemRepository;
 import com.inventory.repository.QuotationRepository;
+import com.inventory.repository.PurchaseRepository;
+import com.inventory.repository.SaleRepository;
+import com.inventory.repository.DailyProfitRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +62,9 @@ public class QuotationService {
     private final QuoteNumberGeneratorService quoteNumberGeneratorService;
     private final PdfGenerationService pdfGenerationService;
     private final QuotationPdfGenerationService quotationPdfGenerationService;
+    private final PurchaseRepository purchaseRepository;
+    private final SaleRepository saleRepository;
+    private final DailyProfitRepository dailyProfitRepository;
 //    private final ProductQuantityService productQuantityService;
 //    private final QuotationItemCalculationRepository quotationItemCalculationRepository;
 //    private final DispatchSlipPdfService dispatchSlipPdfService;
@@ -158,9 +160,8 @@ public class QuotationService {
                 throw new ValidationException("Unauthorized access to quotation");
             }
 
-            if(quotation.getStatus() == QuotationStatus.A || quotation.getStatus() == QuotationStatus.P ||
-                    quotation.getStatus() == QuotationStatus.C) {
-                throw new ValidationException("Quotation is already accepted, processed or completed");
+            if(quotation.getStatus() == QuotationStatus.I) {
+                throw new ValidationException("Quotation is already Invoiced");
             }
 
             if(request.getCustomerId() != null){
@@ -478,6 +479,11 @@ public class QuotationService {
                 }
                 break;
             case C:
+                if (newStatus != QuotationStatus.I) {
+                    throw new ValidationException("Completed quote can only be changed to Invoiced");
+                }
+                break;
+            case I:
                 throw new ValidationException("Current status cannot be updated");
             default:
                 throw new ValidationException("Invalid current status");
@@ -498,6 +504,9 @@ public class QuotationService {
         } else if (currentStatus == QuotationStatus.P && newStatus == QuotationStatus.C) {
             // Move quantities from blocked to used (subtract from blocked)
             updateProductQuantities(quotation, false);
+        } else if (currentStatus == QuotationStatus.C && newStatus == QuotationStatus.I) {
+            // Create purchase and sale entries
+            createPurchaseAndSaleEntries(quotation);
         }
     }
 
@@ -516,6 +525,114 @@ public class QuotationService {
         }*/
     }
 
+    private void createPurchaseAndSaleEntries(Quotation quotation) {
+        UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+        List<QuotationItem> items = quotationItemRepository.findByQuotationId(quotation.getId());
+        
+        for (QuotationItem item : items) {
+            Product product = item.getProduct();
+            
+            // Create purchase entry
+            Purchase purchase = new Purchase();
+            purchase.setProduct(product);
+            purchase.setCategory(product.getCategory());
+            purchase.setQuantity(item.getQuantity().intValue());
+            purchase.setUnitPrice(product.getPurchaseAmount()); // Use product's purchase amount for purchase entry
+            purchase.setCustomer(quotation.getCustomer());
+            purchase.setClient(currentUser.getClient());
+            purchase.setQuotation(quotation);
+            purchase.setQuotationItem(item);
+            
+            // Set quotation discount values
+
+            // Calculate purchase amounts
+            /*BigDecimal baseAmount = product.getPurchaseAmount().multiply(item.getQuantity());
+            
+            // Apply regular discount if any
+            BigDecimal discountAmount = calculatePercentageAmount(baseAmount, item.getDiscountPercentage());
+            BigDecimal afterDiscount = baseAmount.subtract(discountAmount);
+            
+            // Apply quotation discount
+            BigDecimal quotationDiscountAmount = calculatePercentageAmount(afterDiscount, item.getQuotationDiscountPercentage());
+            BigDecimal quotationDiscountPrice = afterDiscount.subtract(quotationDiscountAmount);*/
+            
+            BigDecimal baseAmount = product.getPurchaseAmount().multiply(item.getQuantity());
+            // Set all calculated values for purchase
+            purchase.setDiscount(BigDecimal.ZERO);
+            purchase.setDiscountAmount(BigDecimal.ZERO);
+            purchase.setPurchaseDate(OffsetDateTime.now());
+            purchase.setDiscountPrice(baseAmount);
+            purchase.setTotalAmount(baseAmount);
+            purchase.setRemainingQuantity(0); // Since we're creating sale immediately
+            purchase.setCreatedBy(currentUser);
+            purchase.setOtherExpenses(BigDecimal.ZERO);
+            
+            purchase = purchaseRepository.save(purchase);
+            
+            // Create sale entry
+            Sale sale = new Sale();
+            sale.setPurchase(purchase);
+            sale.setQuantity(item.getQuantity().intValue());
+            sale.setUnitPrice(item.getUnitPrice()); // Use quotation item's unit price for sale
+            sale.setCustomer(quotation.getCustomer());
+            sale.setQuotation(quotation);
+            sale.setQuotationItem(item);
+            
+            // Set quotation discount values for sale
+            sale.setQuotationDiscountPercentage(item.getQuotationDiscountPercentage());
+            sale.setQuotationDiscountAmount(item.getQuotationDiscountAmount());
+            sale.setQuotationDiscountPrice(item.getQuotationDiscountPrice());
+            
+            // Calculate sale amounts
+            /*baseAmount = item.getUnitPrice().multiply(item.getQuantity());
+            
+            // Apply regular discount if any
+            discountAmount = calculatePercentageAmount(baseAmount, item.getDiscountPercentage());
+            afterDiscount = baseAmount.subtract(discountAmount);
+            
+            // Apply quotation discount
+            quotationDiscountAmount = calculatePercentageAmount(afterDiscount, item.getQuotationDiscountPercentage());
+            quotationDiscountPrice = afterDiscount.subtract(quotationDiscountAmount);*/
+            
+            // Set all calculated values for sale
+            sale.setDiscount(item.getDiscountPercentage());
+            sale.setDiscountAmount(item.getDiscountAmount());
+            sale.setDiscountPrice(item.getDiscountPrice());
+            sale.setTotalAmount(item.getQuotationDiscountPrice());
+
+            sale.setSaleDate(OffsetDateTime.now());
+            sale.setCreatedBy(currentUser);
+            sale.setOtherExpenses(BigDecimal.ZERO);
+            sale.setClient(currentUser.getClient());
+            
+            sale = saleRepository.save(sale);
+            
+            // Create daily profit entry
+            createDailyProfit(purchase, sale, currentUser);
+        }
+    }
+
+    private void createDailyProfit(Purchase purchase, Sale sale, UserMaster currentUser) {
+        DailyProfit dailyProfit = new DailyProfit();
+        dailyProfit.setSale(sale);
+        
+        // Use discounted prices for profit calculations (including quotation discount)
+        BigDecimal purchaseAmount = purchase.getDiscountPrice();
+        
+        BigDecimal saleAmount = sale.getQuotationDiscountPrice() != null ?
+            sale.getQuotationDiscountPrice() : sale.getDiscountPrice();
+        
+        dailyProfit.setPurchaseAmount(purchaseAmount);
+        dailyProfit.setSaleAmount(saleAmount);
+        dailyProfit.setGrossProfit(saleAmount.subtract(purchaseAmount));
+        dailyProfit.setOtherExpenses(sale.getOtherExpenses());
+        dailyProfit.setNetProfit(dailyProfit.getGrossProfit().subtract(
+            sale.getOtherExpenses() != null ? sale.getOtherExpenses() : BigDecimal.ZERO));
+        dailyProfit.setProfitDate(sale.getSaleDate());
+        dailyProfit.setClient(currentUser.getClient());
+
+        dailyProfitRepository.save(dailyProfit);
+    }
 
 //    public byte[] generateDispatchSlipPdf(QuotationDto request) {
 //        try {
