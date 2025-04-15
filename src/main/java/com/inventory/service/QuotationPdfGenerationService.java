@@ -545,9 +545,9 @@ public class QuotationPdfGenerationService {
         addStyledBankDetail(bankTable, "BANK: ", "ICICI INDIA");
         addStyledBankDetail(bankTable, "A/C NAME:", "JK INDUSTIES");
         addStyledBankDetail(bankTable, "A/C NO:", "820205000035");
-        addStyledBankDetail(bankTable, "IFSC CODE:", "ICICI0006248/ ICICI0008202");
+        addStyledBankDetail(bankTable, "IFSC CODE:", "ICIC0006248/ ICIC0008202");
         addStyledBankDetail(bankTable, "BRANCH:", "RAJKOT");
-        addStyledBankDetail(bankTable, "UPI:", "MSJKINDUSTRIES...@icici\n MSJKINDUSTRIES.eazypay3@icici");
+        addStyledBankDetail(bankTable, "UPI:", "MSJKINDUSTRIES.eazypay3@icici");
 
         bankDetailsCell.add(bankTable);
         bankDetailsCell.setBackgroundColor(BACKGROUND_LIGHT);
