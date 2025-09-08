@@ -21,11 +21,12 @@ public class PowderCoatingProcessDao {
 
         countSql.append("""
             SELECT COUNT(pcp.id)
-            FROM powder_coating_process pcp
-            LEFT JOIN customer c ON pcp.customer_id = c.id
-            LEFT JOIN product p ON pcp.product_id = p.id
+            FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcp.product_id = p.id
             WHERE 1=1
         """);
+        params.put("clientId", dto.getClientId());
 
         appendSearchConditions(countSql, params, dto);
         
@@ -42,15 +43,19 @@ public class PowderCoatingProcessDao {
                 pcp.id,
                 pcp.quantity,
                 pcp.remaining_quantity,
+                pcp.total_bags,
+                pcp.remarks,
                 pcp.created_at,
                 pcp.status,
-                c.name as customer_name,
-                p.name as product_name,
                 c.id as customer_id,
-                p.id as product_id
-            FROM powder_coating_process pcp
-            LEFT JOIN customer c ON pcp.customer_id = c.id
-            LEFT JOIN product p ON pcp.product_id = p.id
+                c.name as customer_name,
+                p.id as product_id,
+                p.name as product_name,
+                pcp.unit_price,
+                pcp.total_amount
+            FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcp.product_id = p.id
             WHERE 1=1
         """);
 
@@ -79,6 +84,7 @@ public class PowderCoatingProcessDao {
             }
 
             if (dto.getCustomerId() != null) {
+                
                 sql.append(" AND pcp.customer_id = :customerId");
                 params.put("customerId", dto.getCustomerId());
             }
@@ -109,12 +115,16 @@ public class PowderCoatingProcessDao {
             process.put("id", row[0]);
             process.put("quantity", row[1]);
             process.put("remainingQuantity", row[2]);
-            process.put("createdAt", row[3]);
-            process.put("status", row[4]);
-            process.put("customerName", row[5]);
-            process.put("productName", row[6]);
+            process.put("totalBags", row[3]);
+            process.put("remarks", row[4]);
+            process.put("createdAt", row[5]);
+            process.put("status", row[6]);
             process.put("customerId", row[7]);
-            process.put("productId", row[8]);
+            process.put("customerName", row[8]);
+            process.put("productId", row[9]);
+            process.put("productName", row[10]);
+            process.put("unitPrice", row[11]);
+            process.put("totalAmount", row[12]);
             processes.add(process);
         }
 
@@ -124,5 +134,50 @@ public class PowderCoatingProcessDao {
         response.put("totalPages", (int) Math.ceil((double) totalRecords / dto.getPerPageRecord()));
 
         return response;
+    }
+
+    public Map<String, Object> getProcess(Long id, Long clientId) {
+        String query = """
+            SELECT 
+                pcp.id,
+                pcp.quantity,
+                pcp.remaining_quantity,
+                pcp.total_bags,
+                pcp.remarks,
+                pcp.created_at,
+                pcp.status,
+                pcp.customer_id,
+                c.name as customer_name,
+                pcp.product_id,
+                p.name as product_name,
+                pcp.unit_price,
+                pcp.total_amount
+            FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON c.id = pcp.customer_id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON p.id = pcp.product_id
+            WHERE pcp.id = :id
+        """;
+
+        Query nativeQuery = entityManager.createNativeQuery(query);
+        nativeQuery.setParameter("id", id);
+        nativeQuery.setParameter("clientId", clientId);
+        Object[] result = (Object[]) nativeQuery.getSingleResult();
+        
+        Map<String, Object> process = new HashMap<>();
+        process.put("id", result[0]);
+        process.put("quantity", result[1]);
+        process.put("remainingQuantity", result[2]);
+        process.put("totalBags", result[3]);
+        process.put("remarks", result[4]);
+        process.put("createdAt", result[5]);
+        process.put("status", result[6]);
+        process.put("customerId", result[7]);
+        process.put("customerName", result[8]);
+        process.put("productId", result[9]);
+        process.put("productName", result[10]);
+        process.put("unitPrice", result[11]);
+        process.put("totalAmount", result[12]);
+        
+        return process;
     }
 } 

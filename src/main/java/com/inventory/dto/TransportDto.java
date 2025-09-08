@@ -22,13 +22,23 @@ public class TransportDto {
     private List<BagDto> bags;
     private String customerName;
     private OffsetDateTime createdAt;
-    
+    private Long clientId;
     // Search parameters
     private String search;
     private Integer currentPage = 0;
     private Integer perPageRecord = 10;
     private String sortBy = "id";
     private String sortDir = "desc";
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime startDate;
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime endDate;
+    private Integer totalBags;
+    private BigDecimal weight;
     
     @Data
     @Getter
@@ -37,6 +47,8 @@ public class TransportDto {
     public static class BagDto {
         private Long id;
         private BigDecimal weight;
+        private Integer numberOfBags;
+        private BigDecimal totalBagWeight;
         private List<BagItemDto> items;
     }
     
@@ -48,5 +60,17 @@ public class TransportDto {
         private Long productId;
         private Integer quantity;
         private String remarks;
+        private Long clientId;
+        // Purchase related fields
+        private BigDecimal purchaseUnitPrice;
+        private BigDecimal purchaseDiscount;
+        private BigDecimal purchaseDiscountAmount;
+        private BigDecimal purchaseDiscountPrice;
+        
+        // Sale related fields
+        private BigDecimal saleUnitPrice;
+        private BigDecimal saleDiscount;
+        private BigDecimal saleDiscountAmount;
+        private BigDecimal saleDiscountPrice;
     }
 } 

@@ -22,6 +22,7 @@ public class CustomerDto {
     private String address;
     private String mobile;
     private BigDecimal remainingPaymentAmount;
+    private BigDecimal coatingUnitPrice;
 
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
@@ -41,4 +42,5 @@ public class CustomerDto {
     private String search;
     private Integer currentPage = 0;
     private Integer perPageRecord = 10;
+    private Long clientId;
 } 

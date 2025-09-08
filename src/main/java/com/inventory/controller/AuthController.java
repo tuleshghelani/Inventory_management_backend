@@ -25,7 +25,6 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) throws ValidationException {
-        String token = authService.login(request);
-        return ResponseEntity.ok(new JwtAuthenticationResponse(token));
+        return ResponseEntity.ok(authService.login(request));
     }
 }

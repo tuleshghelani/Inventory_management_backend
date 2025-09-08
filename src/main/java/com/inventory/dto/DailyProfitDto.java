@@ -19,7 +19,7 @@ public class DailyProfitDto {
     private String search;
     private Long saleId;
     private Long productId;
-    
+    private Long clientId;
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime startDate;

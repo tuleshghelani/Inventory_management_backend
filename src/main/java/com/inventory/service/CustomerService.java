@@ -1,8 +1,10 @@
 package com.inventory.service;
 
 import com.inventory.dto.ApiResponse;
+import com.inventory.dto.CoatingPriceDto;
 import com.inventory.dto.CustomerDto;
 import com.inventory.entity.Customer;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.CustomerRepository;
 import com.inventory.dao.CustomerDao;
@@ -36,7 +38,7 @@ public class CustomerService {
             Customer customer = new Customer();
             mapDtoToEntity(dto, customer);
             customer.setCreatedBy(utilityService.getCurrentLoggedInUser());
-            
+            customer.setClient(utilityService.getCurrentLoggedInUser().getClient());
             customer = customerRepository.save(customer);
             return ApiResponse.success("Customer created successfully", mapEntityToDto(customer));
         } catch (ValidationException e) {
@@ -55,6 +57,11 @@ public class CustomerService {
             
             Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Customer not found"));
+
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(customer.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this customer");
+            }
 
 //            Optional<Customer> existingCustomer = customerRepository.findByMobileAndIdNot(
 //                dto.getMobile().trim(), customer.getId());
@@ -78,7 +85,10 @@ public class CustomerService {
         try {
             Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Customer not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(customer.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this customer");
+            }
             customerRepository.delete(customer);
             return ApiResponse.success("Customer deleted successfully");
         } catch (ValidationException e) {
@@ -90,6 +100,8 @@ public class CustomerService {
 
     public ApiResponse<Map<String, Object>> searchCustomers(CustomerDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             Map<String, Object> result = customerDao.searchCustomers(dto);
             return ApiResponse.success("Customers retrieved successfully", result);
         } catch (Exception e) {
@@ -99,6 +111,8 @@ public class CustomerService {
 
     public ApiResponse<List<Map<String, Object>>> getCustomers(CustomerDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             List<Map<String, Object>> customers = customerDao.getCustomers(dto);
             return ApiResponse.success("Customers retrieved successfully", customers);
         } catch (Exception e) {
@@ -114,12 +128,41 @@ public class CustomerService {
             
             Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Customer not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(customer.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to view this customer");
+            }
             
             return ApiResponse.success("Customer retrieved successfully", mapEntityToDto(customer));
         } catch (ValidationException e) {
             throw e;
         } catch (Exception e) {
             throw new ValidationException("Failed to retrieve customer: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<?> getCoatingPrice(CoatingPriceDto dto) {
+        try {
+            if (dto.getId() == null) {
+                throw new ValidationException("Customer ID is required");
+            }
+            
+            Customer customer = customerRepository.findById(dto.getId())
+                .orElseThrow(() -> new ValidationException("Customer not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(customer.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to view this customer");
+            }
+
+            CoatingPriceDto response = new CoatingPriceDto();
+            response.setId(customer.getId());
+            response.setCoatingUnitPrice(customer.getCoatingUnitPrice());
+            
+            return ApiResponse.success("Coating price retrieved successfully", response);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to retrieve coating price: " + e.getMessage());
         }
     }
 
@@ -143,6 +186,7 @@ public class CustomerService {
         customer.setAddress(dto.getAddress());
         customer.setMobile(dto.getMobile().trim());
         customer.setRemainingPaymentAmount(dto.getRemainingPaymentAmount());
+        customer.setCoatingUnitPrice(dto.getCoatingUnitPrice());
         customer.setNextActionDate(dto.getNextActionDate());
         customer.setEmail(dto.getEmail());
         customer.setRemarks(dto.getRemarks());
@@ -157,10 +201,12 @@ public class CustomerService {
         dto.setAddress(customer.getAddress());
         dto.setMobile(customer.getMobile());
         dto.setRemainingPaymentAmount(customer.getRemainingPaymentAmount());
+        dto.setCoatingUnitPrice(customer.getCoatingUnitPrice());
         dto.setNextActionDate(customer.getNextActionDate());
         dto.setEmail(customer.getEmail());
         dto.setRemarks(customer.getRemarks());
         dto.setStatus(customer.getStatus());
+        dto.setClientId(customer.getClient().getId());
         return dto;
     }
 } 

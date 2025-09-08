@@ -1,15 +1,41 @@
 package com.inventory.entity;
 
-import jakarta.persistence.*;
-import lombok.Data;
-import java.time.OffsetDateTime;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "daily_profit",
     indexes = {
         @Index(name = "idx_daily_sale_id", columnList = "sale_id"),
+        @Index(name = "idx_daily_profit_date", columnList = "profit_date"),
+        @Index(name = "idx_daily_profit_gross_profit", columnList = "gross_profit"),
+        @Index(name = "idx_daily_profit_net_profit", columnList = "net_profit"),
+        @Index(name = "idx_daily_profit_other_expenses", columnList = "other_expenses"),
+        @Index(name = "idx_daily_profit_purchase_amount", columnList = "purchase_amount"),
+        @Index(name = "idx_daily_profit_sale_amount", columnList = "sale_amount"),        
+        @Index(name = "idx_daily_profit_client_id", columnList = "client_id")
     }
 )
 public class DailyProfit {
@@ -44,4 +70,8 @@ public class DailyProfit {
     
     @Column(name = "updated_at", length = 29, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_daily_profit_client_id_client_id"))
+    private Client client;
 }

@@ -37,11 +37,12 @@ public class PurchaseDao {
             countQuery.append("SELECT COUNT(*) ");
 
             nativeQuery.append("""
-                FROM purchase p 
-                LEFT JOIN product pr ON p.product_id = pr.id
-                LEFT JOIN category c ON p.category_id = c.id 
+                FROM (SELECT * FROM purchase WHERE client_id = :clientId) p 
+                LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
+                LEFT JOIN (SELECT * FROM category WHERE client_id = :clientId) c ON p.category_id = c.id
                 WHERE 1=1
                 """);
+            params.put("clientId", dto.getClientId());
 
             appendSearchConditions(nativeQuery, params, dto);
 

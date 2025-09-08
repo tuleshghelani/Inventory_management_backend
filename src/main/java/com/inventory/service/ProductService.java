@@ -3,6 +3,7 @@ package com.inventory.service;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.ProductDto;
 import com.inventory.entity.Product;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.ProductRepository;
 import com.inventory.repository.CategoryRepository;
@@ -24,6 +25,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductDao productDao;
+    private final UtilityService utilityService;
 
     @Transactional
     public ApiResponse<?> create(ProductDto dto) {
@@ -34,6 +36,7 @@ public class ProductService {
             if(!productByName.isEmpty()) {
                 throw new ValidationException("Product name already exists");
             }
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
 
             Product product = new Product();
             product.setName(dto.getName().trim());
@@ -44,7 +47,9 @@ public class ProductService {
             product.setSaleAmount(dto.getSaleAmount() != null ? dto.getSaleAmount() : BigDecimal.valueOf(0));
             product.setMinimumStock(dto.getMinimumStock());
             product.setStatus(dto.getStatus().trim());
-            
+            product.setClient(currentUser.getClient());
+            product.setCreatedBy(currentUser);
+
             productRepository.save(product);
             return ApiResponse.success("Product created successfully");
         } catch (ValidationException e) {
@@ -66,6 +71,10 @@ public class ProductService {
             if(!productByName.isEmpty()) {
                 throw new ValidationException("Product name already exists");
             }
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(product.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this product");
+            }
             
             product.setName(dto.getName().trim());
             product.setCategory(categoryRepository.findById(dto.getCategoryId())
@@ -75,7 +84,8 @@ public class ProductService {
             product.setSaleAmount(dto.getSaleAmount() != null ? dto.getSaleAmount() : BigDecimal.valueOf(0));
             product.setMinimumStock(dto.getMinimumStock());
             product.setStatus(dto.getStatus().trim());
-            
+            product.setClient(currentUser.getClient());
+
             productRepository.save(product);
             return ApiResponse.success("Product updated successfully");
         } catch (ValidationException e) {
@@ -89,6 +99,8 @@ public class ProductService {
 
     public ApiResponse<List<Map<String, Object>>> getProducts(ProductDto productDto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            productDto.setClientId(currentUser.getClient().getId());
             List<Map<String, Object>> products = productDao.getProducts(productDto);
             return ApiResponse.success("Products retrieved successfully", products);
         } catch (Exception e) {
@@ -99,6 +111,8 @@ public class ProductService {
     
     public ApiResponse<Map<String, Object>> searchProducts(ProductDto productDto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            productDto.setClientId(currentUser.getClient().getId());
             Map<String, Object> result = productDao.searchProducts(productDto);
             return ApiResponse.success("Products retrieved successfully", result);
         } catch (Exception e) {
@@ -112,7 +126,10 @@ public class ProductService {
         try {
             Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Product not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(product.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this product");
+            }
             productRepository.delete(product);
             return ApiResponse.success("Product deleted successfully");
         } catch (ValidationException e) {
@@ -150,6 +167,7 @@ public class ProductService {
         dto.setMinimumStock(product.getMinimumStock());
         dto.setStatus(product.getStatus());
         dto.setRemainingQuantity(product.getRemainingQuantity());
+        dto.setClientId(product.getClient().getId());
         return dto;
     }
 }

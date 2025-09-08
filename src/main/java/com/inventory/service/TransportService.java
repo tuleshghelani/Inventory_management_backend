@@ -4,14 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inventory.dao.TransportDao;
 import com.inventory.dto.ApiResponse;
 import com.inventory.dto.TransportDto;
-import com.inventory.entity.Transport;
-import com.inventory.entity.TransportBag;
+import com.inventory.entity.*;
 import com.inventory.exception.ValidationException;
-import com.inventory.repository.CustomerRepository;
-import com.inventory.repository.ProductRepository;
-import com.inventory.repository.TransportBagRepository;
-import com.inventory.repository.TransportRepository;
+import com.inventory.repository.*;
 import com.inventory.service.UtilityService;
+import com.inventory.util.DiscountCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +17,9 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -32,12 +31,16 @@ public class TransportService {
     private final TransportDao transportDao;
     private final UtilityService utilityService;
     private final ObjectMapper objectMapper;
-    
-    @Transactional
+    private final PurchaseRepository purchaseRepository;
+    private final SaleRepository saleRepository;
+    private final DailyProfitRepository dailyProfitRepository;
+    private final TransportItemRepository transportItemRepository;
+
+    @Transactional(rollbackFor = Exception.class)
     public ApiResponse<?> create(TransportDto dto) {
         try {
             validateTransport(dto);
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
             Transport transport;
             if (dto.getId() != null) {
                 // Update existing transport
@@ -47,6 +50,15 @@ public class TransportService {
                 transport.setCustomer(customerRepository.findById(dto.getCustomerId())
                     .orElseThrow(() -> new ValidationException("Customer not found")));
 
+                
+                // Get all sales for this transport and delete their daily profits
+                List<Sale> sales = saleRepository.findByTransportId(transport.getId());
+                for (Sale sale : sales) {
+                    dailyProfitRepository.deleteBySaleId(sale.getId());
+                }
+                saleRepository.deleteByTransportId(transport.getId());
+                purchaseRepository.deleteByTransportId(transport.getId());
+                transportItemRepository.deleteByTransportId(transport.getId());
                 transportBagRepository.deleteByTransportId(transport.getId());
                 
             } else {
@@ -55,12 +67,23 @@ public class TransportService {
                     .orElseThrow(() -> new ValidationException("Customer not found")));
                 transport.setCreatedBy(utilityService.getCurrentLoggedInUser());
             }
-            
+
+            BigDecimal totalWeight = dto.getBags().stream()
+                .map(bag -> bag.getWeight().multiply(BigDecimal.valueOf(bag.getNumberOfBags())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            transport.setTotalWeight(totalWeight);
+            transport.setTotalBags(dto.getBags().stream().map(TransportDto.BagDto::getNumberOfBags).reduce(0, Integer::sum));
+            transport.setClient(currentUser.getClient());
+            transport.setCreatedBy(currentUser);
+
             transport = transportRepository.save(transport);
-            saveBags(dto.getBags(), transport);
+
+            saveBagsAndCreateEntries(dto.getBags(), transport);
+            
             String message = dto.getId() != null ? "Transport updated successfully" : "Transport created successfully";
             return ApiResponse.success(message);
         } catch (Exception e) {
+            e.getMessage();
             throw new ValidationException("Failed to " + (dto.getId() != null ? "update" : "create") + 
                 " transport: " + e.getMessage());
         }
@@ -78,6 +101,9 @@ public class TransportService {
             if (bag.getWeight() == null || bag.getWeight().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new ValidationException("Valid weight is required for each bag");
             }
+            if (bag.getNumberOfBags() == null || bag.getNumberOfBags() < 1) {
+                throw new ValidationException("Number of bags must be at least 1");
+            }
             if (bag.getItems() == null || bag.getItems().isEmpty()) {
                 throw new ValidationException("At least one item is required in each bag");
             }
@@ -92,40 +118,71 @@ public class TransportService {
                 // Verify product exists
                 productRepository.findById(item.getProductId())
                     .orElseThrow(() -> new ValidationException("Product not found: " + item.getProductId()));
+                
+                // Validate purchase fields
+                if (item.getPurchaseUnitPrice() == null || item.getPurchaseUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new ValidationException("Valid purchase unit price is required");
+                }
+                if (item.getPurchaseDiscount() != null && 
+                    item.getPurchaseDiscount().compareTo(BigDecimal.valueOf(100)) > 0) {
+                    throw new ValidationException("Purchase discount cannot be greater than 100%");
+                }
+                
+                // Validate sale fields
+                if (item.getSaleUnitPrice() == null || item.getSaleUnitPrice().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new ValidationException("Valid sale unit price is required");
+                }
+                if (item.getSaleDiscount() != null && 
+                    item.getSaleDiscount().compareTo(BigDecimal.valueOf(100)) > 0) {
+                    throw new ValidationException("Sale discount cannot be greater than 100%");
+                }
             }
         }
     }
 
-    @Transactional
-    public ApiResponse<?> update(Long id, TransportDto dto) {
-        try {
-            validateTransport(dto);
-            
-            Transport transport = transportRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Transport not found"));
-            
-            transport.setCustomer(customerRepository.findById(dto.getCustomerId())
-                .orElseThrow(() -> new ValidationException("Customer not found")));
-            
-            // Delete existing bags
-            transportBagRepository.deleteByTransportId(id);
-            
-            // Create new bags
-            saveBags(dto.getBags(), transport);
-            
-            return ApiResponse.success("Transport updated successfully");
-        } catch (Exception e) {
-            throw new ValidationException("Failed to update transport: " + e.getMessage());
-        }
-    }
+//    @Transactional
+//    public ApiResponse<?> update(Long id, TransportDto dto) {
+//        try {
+//            validateTransport(dto);
+//
+//            Transport transport = transportRepository.findById(id)
+//                .orElseThrow(() -> new ValidationException("Transport not found"));
+//
+//            transport.setCustomer(customerRepository.findById(dto.getCustomerId())
+//                .orElseThrow(() -> new ValidationException("Customer not found")));
+//
+//            // Delete existing bags
+//            transportBagRepository.deleteByTransportId(id);
+//
+//            // Create new bags
+//            saveBags(dto.getBags(), transport);
+//
+//            return ApiResponse.success("Transport updated successfully");
+//        } catch (Exception e) {
+//            throw new ValidationException("Failed to update transport: " + e.getMessage());
+//        }
+//    }
 
     @Transactional
     public ApiResponse<?> delete(Long id) {
         try {
             Transport transport = transportRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Transport not found"));
+
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(transport.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this transport");
+            }
             
-            // Delete associated bags first
+            // Get all sales for this transport and delete their daily profits
+            List<Sale> sales = saleRepository.findByTransportId(id);
+            for (Sale sale : sales) {
+                dailyProfitRepository.deleteBySaleId(sale.getId());
+            }
+            
+            saleRepository.deleteByTransportId(id);
+            purchaseRepository.deleteByTransportId(id);
+            transportItemRepository.deleteByTransportId(id);
             transportBagRepository.deleteByTransportId(id);
             
             // Delete transport
@@ -133,6 +190,7 @@ public class TransportService {
             
             return ApiResponse.success("Transport deleted successfully");
         } catch (Exception e) {
+            e.getMessage();
             throw new ValidationException("Failed to delete transport: " + e.getMessage());
         }
     }
@@ -140,6 +198,8 @@ public class TransportService {
     public ApiResponse<?> searchTransports(TransportDto dto) {
         try {
             validateSearchRequest(dto);
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             Map<String, Object> result = transportDao.searchTransports(dto);
             return ApiResponse.success("Transports retrieved successfully", result);
         } catch (Exception e) {
@@ -171,21 +231,141 @@ public class TransportService {
             .collect(Collectors.toList());
     }
 
-    private void saveBags(List<TransportDto.BagDto> bagDtos, Transport transport) {
+    private void saveBagsAndCreateEntries(List<TransportDto.BagDto> bagDtos, Transport transport) {
         int batchSize = 50;
         int count = 0;
+        UserMaster currentUser = utilityService.getCurrentLoggedInUser();
         
         for (TransportDto.BagDto bagDto : bagDtos) {
+            // Save bag
             TransportBag bag = new TransportBag();
             bag.setTransport(transport);
             bag.setWeight(bagDto.getWeight());
-            bag.setItems(convertItemsToJsonFormat(bagDto.getItems()));
-            transportBagRepository.save(bag);
+            bag.setNumberOfBags(bagDto.getNumberOfBags());
+            bag.setTotalBagWeight(bagDto.getWeight().multiply(BigDecimal.valueOf(bagDto.getNumberOfBags())));
+            bag.setClient(currentUser.getClient());
+            bag = transportBagRepository.save(bag);
             
-            if (++count % batchSize == 0) {
-                transportBagRepository.flush();
+            // Save items
+            for (TransportDto.BagItemDto itemDto : bagDto.getItems()) {
+                TransportItem item = new TransportItem();
+                item.setTransport(transport);
+                item.setTransportBag(bag);
+                item.setProduct(productRepository.findById(itemDto.getProductId())
+                    .orElseThrow(() -> new ValidationException("Product not found")));
+                item.setQuantity(itemDto.getQuantity());
+                item.setPerBagQuantity(itemDto.getQuantity() / bagDto.getNumberOfBags());
+                item.setRemarks(itemDto.getRemarks());
+                item.setClient(currentUser.getClient());
+                item = transportItemRepository.save(item);
+                
+                // Create purchase and sale entries
+                createPurchaseAndSaleEntries(itemDto, transport, item, currentUser);
+                
+                if (++count % batchSize == 0) {
+                    transportItemRepository.flush();
+                }
             }
         }
+    }
+
+    private void createPurchaseAndSaleEntries(TransportDto.BagItemDto item, Transport transport, TransportItem transportItem, UserMaster currentUser) {
+        // Create purchase
+        Purchase purchase = new Purchase();
+        Optional<Product> product = productRepository.findById(item.getProductId());
+        if(product.isEmpty()) {
+            throw new ValidationException("Product not found");
+        }
+        purchase.setProduct(product.get());
+        purchase.setQuantity(item.getQuantity());
+        purchase.setUnitPrice(item.getPurchaseUnitPrice());
+        purchase.setCustomer(transport.getCustomer()); // Set customer from transport
+        purchase.setClient(currentUser.getClient());
+        // Calculate purchase amounts with discount
+        calculatePurchaseAmounts(purchase, item);
+        
+        purchase.setPurchaseDate(transport.getCreatedAt());
+        purchase.setTransport(transport);
+        purchase.setRemainingQuantity(0); // Since we're creating sale immediately
+        purchase.setCreatedBy(currentUser);
+        purchase.setOtherExpenses(BigDecimal.ZERO);
+        purchase.setCategory(product.get().getCategory());
+        purchase.setTransportItem(transportItem);
+        purchase = purchaseRepository.save(purchase);
+        
+        // Create sale
+        Sale sale = new Sale();
+        sale.setPurchase(purchase);
+        sale.setQuantity(item.getQuantity());
+        sale.setUnitPrice(item.getSaleUnitPrice());
+        sale.setCustomer(transport.getCustomer()); // Set customer from transport
+        
+        // Calculate sale amounts with discount
+        calculateSaleAmounts(sale, item);
+        
+        sale.setSaleDate(transport.getCreatedAt());
+        sale.setTransport(transport);
+        sale.setCreatedBy(currentUser);
+        sale.setOtherExpenses(BigDecimal.ZERO);
+        sale.setTransportItem(transportItem);
+        sale.setClient(currentUser.getClient());
+        sale = saleRepository.save(sale);
+        
+        // Create daily profit
+        createDailyProfit(purchase, sale, currentUser);
+    }
+
+    private void calculatePurchaseAmounts(Purchase purchase, TransportDto.BagItemDto item) {
+        // Calculate base amount
+        BigDecimal baseAmount = item.getPurchaseUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+        
+        // Calculate discount amount
+        BigDecimal discountAmount = item.getPurchaseDiscountAmount();
+        
+        // Calculate discounted price
+        BigDecimal discountPrice = DiscountCalculator.calculateDiscountedPrice(baseAmount, discountAmount);
+        
+        // Set all calculated values
+        purchase.setDiscount(item.getPurchaseDiscount());
+        purchase.setDiscountAmount(discountAmount);
+        purchase.setDiscountPrice(discountPrice);
+        purchase.setTotalAmount(discountPrice); // Since we don't have other expenses in transport
+    }
+
+    private void calculateSaleAmounts(Sale sale, TransportDto.BagItemDto item) {
+        // Calculate base amount
+        BigDecimal baseAmount = item.getSaleUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+        
+        // Calculate discount amount
+        BigDecimal discountAmount = item.getSaleDiscountAmount();
+        
+        // Calculate discounted price
+        BigDecimal discountPrice = DiscountCalculator.calculateDiscountedPrice(baseAmount, discountAmount);
+        
+        // Set all calculated values
+        sale.setDiscount(item.getSaleDiscount());
+        sale.setDiscountAmount(discountAmount);
+        sale.setDiscountPrice(discountPrice);
+        sale.setTotalAmount(discountPrice); // Since we don't have other expenses in transport
+    }
+
+    private void createDailyProfit(Purchase purchase, Sale sale, UserMaster currentUser) {
+        DailyProfit dailyProfit = new DailyProfit();
+        dailyProfit.setSale(sale);
+        
+        BigDecimal purchaseAmount = purchase.getDiscountPrice();
+        BigDecimal saleAmount = sale.getDiscountPrice();
+        
+        dailyProfit.setPurchaseAmount(purchaseAmount);
+        dailyProfit.setSaleAmount(saleAmount);
+        dailyProfit.setGrossProfit(saleAmount.subtract(purchaseAmount));
+        dailyProfit.setOtherExpenses(sale.getOtherExpenses());
+        dailyProfit.setNetProfit(dailyProfit.getGrossProfit().subtract(
+            sale.getOtherExpenses() != null ? sale.getOtherExpenses() : BigDecimal.ZERO));
+        dailyProfit.setProfitDate(sale.getSaleDate());
+        dailyProfit.setClient(currentUser.getClient());
+
+        dailyProfitRepository.save(dailyProfit);
     }
 
     public ApiResponse<?> getTransportDetail(TransportDto dto) {
@@ -194,9 +374,11 @@ public class TransportService {
                 throw new ValidationException("Transport ID is required");
             }
             
-            Map<String, Object> result = transportDao.getTransportDetail(dto.getId());
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            Map<String, Object> result = transportDao.getTransportDetail(dto.getId(), currentUser.getClient().getId());
             return ApiResponse.success("Transport detail retrieved successfully", result);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new ValidationException("Failed to get transport detail: " + e.getMessage());
         }
     }

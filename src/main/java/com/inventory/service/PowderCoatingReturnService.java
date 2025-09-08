@@ -5,6 +5,7 @@ import com.inventory.dto.PowderCoatingReturnDto;
 import com.inventory.dao.PowderCoatingReturnDao;
 import com.inventory.entity.PowderCoatingProcess;
 import com.inventory.entity.PowderCoatingReturn;
+import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.PowderCoatingReturnRepository;
 import com.inventory.repository.PowderCoatingProcessRepository;
@@ -27,6 +28,8 @@ public class PowderCoatingReturnService {
 
     public ApiResponse<Map<String, Object>> searchReturns(PowderCoatingReturnDto dto) {
         try {
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            dto.setClientId(currentUser.getClient().getId());
             validateSearchRequest(dto);
             Map<String, Object> result = returnDao.searchReturns(dto);
             return ApiResponse.success("Return history retrieved successfully", result);
@@ -41,9 +44,13 @@ public class PowderCoatingReturnService {
             if (id == null) {
                 throw new ValidationException("ID is required for deletion");
             }
-            
+
             PowderCoatingReturn returnRecord = returnRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Return record not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(returnRecord.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this return record");
+            }
             
             // Restore the remaining quantity
             PowderCoatingProcess process = returnRecord.getProcess();
@@ -64,7 +71,11 @@ public class PowderCoatingReturnService {
             
             PowderCoatingReturn returnRecord = returnRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Return record not found"));
-            
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(returnRecord.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to update this return record");
+            }
+
             PowderCoatingProcess process = returnRecord.getProcess();
 
             process.setRemainingQuantity(process.getRemainingQuantity() + returnRecord.getReturnQuantity());
@@ -118,6 +129,12 @@ public class PowderCoatingReturnService {
         try {
             if (processId == null) {
                 throw new ValidationException("Process ID is required");
+            }
+            PowderCoatingProcess process = processRepository.findById(processId)
+                .orElseThrow(() -> new ValidationException("Process not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(process.getClient().getId() != currentUser.getClient().getId()) {
+                throw new ValidationException("You are not authorized to delete this return record");
             }
 
             List<Map<String, Object>> returns = returnRepository.findByProcessId(processId)

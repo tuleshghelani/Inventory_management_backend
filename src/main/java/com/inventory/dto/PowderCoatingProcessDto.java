@@ -7,6 +7,8 @@ import com.inventory.config.CustomDateDeserializer;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
@@ -16,26 +18,39 @@ import java.time.OffsetDateTime;
 public class PowderCoatingProcessDto {
     private Long id;
     private Long customerId;
+    private String customerName;
     private Long productId;
+    private String productName;
     private Integer quantity;
     private Integer remainingQuantity;
+    private Integer totalBags;
+    private String remarks;
+    private BigDecimal unitPrice;
+    private BigDecimal totalAmount;
     private String status;
-    private String customerName;
-    private String productName;
-    
+    private Integer returnQuantity;
+    private Long clientId;
+
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime returnDate;
+
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
     private OffsetDateTime createdAt;
     
-    @JsonDeserialize(using = CustomDateDeserializer.class)
-    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
-    private OffsetDateTime returnDate;
-    
-    // Search and pagination parameters
+    // Search parameters
     private String search;
     private Integer currentPage = 0;
     private Integer perPageRecord = 10;
     private String sortBy = "id";
     private String sortDir = "desc";
-    private Integer returnQuantity;
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime startDate;
+    
+    @JsonDeserialize(using = CustomDateDeserializer.class)
+    @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")
+    private OffsetDateTime endDate;
 } 

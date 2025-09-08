@@ -20,12 +20,13 @@ public class PowderCoatingReturnDao {
 
         countSql.append("""
             SELECT COUNT(r.id)
-            FROM powder_coating_return r
-            LEFT JOIN powder_coating_process p ON r.process_id = p.id
-            LEFT JOIN customer c ON p.customer_id = c.id
-            LEFT JOIN product pr ON p.product_id = pr.id
+            FROM (SELECT * FROM powder_coating_return WHERE client_id = :clientId) r
+            LEFT JOIN (SELECT * FROM powder_coating_process WHERE client_id = :clientId) p ON r.process_id = p.id
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON p.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
             WHERE 1=1
         """);
+        params.put("clientId", dto.getClientId());
 
         appendSearchConditions(countSql, params, dto);
         
@@ -45,10 +46,10 @@ public class PowderCoatingReturnDao {
                 p.remaining_quantity,
                 c.name as customer_name,
                 pr.name as product_name
-            FROM powder_coating_return r
-            LEFT JOIN powder_coating_process p ON r.process_id = p.id
-            LEFT JOIN customer c ON p.customer_id = c.id
-            LEFT JOIN product pr ON p.product_id = pr.id
+            FROM (SELECT * FROM powder_coating_return WHERE client_id = :clientId) r
+            LEFT JOIN (SELECT * FROM powder_coating_process WHERE client_id = :clientId) p ON r.process_id = p.id
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON p.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
             WHERE 1=1
         """);
 

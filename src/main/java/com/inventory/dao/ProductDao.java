@@ -27,7 +27,8 @@ public class ProductDao {
                 p.id,
                 p.name,
                 p.purchase_amount,
-                p.sale_amount
+                p.sale_amount,
+                p.tax_percentage
             FROM product p
             WHERE 1=1
         """);
@@ -53,6 +54,9 @@ public class ProductDao {
             }
         }
         
+        sql.append(" AND p.client_id = :clientId");
+        params.put("clientId", productDto.getClientId());
+        
         sql.append(" ORDER BY p.id DESC");
         
         Query query = entityManager.createNativeQuery(sql.toString());
@@ -69,6 +73,7 @@ public class ProductDao {
                 product.put("name", row[1]);
                 product.put("purchase_amount", row[2]);
                 product.put("sale_amount", row[3]);
+                product.put("tax_percentage", row[4]);
 
                 products.add(product);
             }
@@ -149,6 +154,9 @@ public class ProductDao {
                 params.put("categoryId", productDto.getCategoryId());
             }
         }
+
+        sql.append(" AND p.client_id = :clientId");
+        params.put("clientId", productDto.getClientId());
     }
 
     private void setQueryParameters(Query query, Map<String, Object> params, ProductDto productDto) {
@@ -172,8 +180,8 @@ public class ProductDao {
                 product.put("remainingQuantity", row[5]);
                 product.put("categoryId", row[6]);
                 product.put("categoryName", row[7]);
-                product.put("purchase_amount", row[8]);
-                product.put("sale_amount", row[9]);
+                product.put("purchaseAmount", row[8]);
+                product.put("saleAmount", row[9]);
                 products.add(product);
             }
         }

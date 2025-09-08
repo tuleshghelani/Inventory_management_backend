@@ -21,7 +21,8 @@ public class CustomerDao {
         StringBuilder countSql = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
 
-        countSql.append("SELECT COUNT(c.id) FROM customer c WHERE 1=1");
+        countSql.append("SELECT COUNT(c.id) FROM customer c WHERE c.client_id = :clientId");
+        params.put("clientId", dto.getClientId());
 
         if (StringUtils.hasText(dto.getSearch())) {
             countSql.append(" AND (LOWER(c.name) LIKE LOWER(:search) OR c.mobile LIKE :search OR LOWER(c.gst) LIKE LOWER(:search))");
@@ -46,10 +47,10 @@ public class CustomerDao {
             SELECT 
                 c.id, c.name, c.gst, c.address, c.mobile,
                 c.remaining_payment_amount, c.next_action_date,
-                c.email, c.remarks, c.status,
+                c.email, c.remarks, c.status, c.coating_unit_price,
                 c.created_at, c.updated_at
             FROM customer c
-            WHERE 1=1
+            WHERE c.client_id = :clientId
         """);
 
         if (StringUtils.hasText(dto.getSearch())) {
@@ -63,6 +64,8 @@ public class CustomerDao {
             sql.append(" AND c.next_action_date <= :endDate");
             params.put("endDate", dto.getEndDate());
         }
+
+        params.put("clientId", dto.getClientId());
 
         sql.append(" ORDER BY c.id DESC LIMIT :pageSize OFFSET :offset");
 
@@ -90,8 +93,9 @@ public class CustomerDao {
             customer.put("email", row[7]);
             customer.put("remarks", row[8]);
             customer.put("status", row[9]);
-            customer.put("createdAt", row[10]);
-            customer.put("updatedAt", row[11]);
+            customer.put("coatingUnitPrice", row[10]);
+            customer.put("createdAt", row[11]);
+            customer.put("updatedAt", row[12]);
             customers.add(customer);
         }
 
@@ -111,10 +115,13 @@ public class CustomerDao {
         sql.append("""
             SELECT 
                 c.id,
-                c.name
+                c.name,
+                c.address,
+                c.mobile
             FROM customer c
-            WHERE c.status = 'A'
+            WHERE c.status = 'A' AND c.client_id = :clientId
         """);
+        params.put("clientId", dto.getClientId());
 
         if (StringUtils.hasText(dto.getSearch())) {
             sql.append(" AND LOWER(c.name) LIKE LOWER(:search)");
@@ -137,6 +144,8 @@ public class CustomerDao {
             Map<String, Object> customer = new HashMap<>();
             customer.put("id", row[0]);
             customer.put("name", row[1]);
+            customer.put("address", row[2]);
+            customer.put("mobile", row[3]);
             customers.add(customer);
         }
         

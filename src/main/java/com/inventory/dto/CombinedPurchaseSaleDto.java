@@ -25,4 +25,15 @@ public class CombinedPurchaseSaleDto {
     private OffsetDateTime saleDate;
     private String saleInvoiceNumber;
     private BigDecimal saleOtherExpenses;
+
+    // Purchase discount fields
+    private BigDecimal purchaseDiscount;
+    private BigDecimal purchaseDiscountAmount;
+    private BigDecimal purchaseDiscountPrice;
+    
+    // Sale discount fields
+    private BigDecimal saleDiscount;
+    private BigDecimal saleDiscountAmount;
+    private BigDecimal saleDiscountPrice;
+    private Long clientId;
 } 

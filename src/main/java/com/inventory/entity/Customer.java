@@ -1,17 +1,23 @@
 package com.inventory.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+
 import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
 @Data
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "customer", indexes = {
     @Index(name = "idx_customer_name", columnList = "name"),
     @Index(name = "idx_customer_mobile", columnList = "mobile"),
     @Index(name = "idx_customer_email", columnList = "email"),
     @Index(name = "idx_customer_remaining_payment_amount", columnList = "remaining_payment_amount"),
+    @Index(name = "idx_customer_client_id", columnList = "client_id")
 })
 public class Customer {
     @Id
@@ -29,6 +35,9 @@ public class Customer {
     
     @Column(name = "mobile", length = 15)
     private String mobile;
+
+    @Column(name = "coating_unit_price", precision = 10, scale = 2)
+    private BigDecimal coatingUnitPrice;
     
     @Column(name = "remaining_payment_amount", precision = 10, scale = 2)
     private BigDecimal remainingPaymentAmount;
@@ -54,4 +63,8 @@ public class Customer {
     
     @Column(name = "remarks", length = 1000)
     private String remarks;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", referencedColumnName = "id", foreignKey = @ForeignKey(name = "fk_customer_client_id_client_id"))
+    private Client client;
 } 

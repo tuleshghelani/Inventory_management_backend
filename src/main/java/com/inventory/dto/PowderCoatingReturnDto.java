@@ -19,6 +19,7 @@ public class PowderCoatingReturnDto {
     private String processDetails;
     private String customerName;
     private String productName;
+    private Long clientId;
 
     private String search;
     private Integer currentPage = 0;
