@@ -33,6 +33,11 @@ public class RefreshTokenService {
         
         UserMaster user = userMasterRepository.findByRefreshToken(refreshToken)
             .orElseThrow(() -> new ValidationException("Invalid refresh token"));
+        
+        // Check if user status is Active
+        if (!"A".equals(user.getStatus())) {
+            throw new ValidationException("Account is inactive");
+        }
             
         if (user.getRefreshTokenExpiry().isBefore(OffsetDateTime.now())) {
             throw new ValidationException("Refresh token has expired");

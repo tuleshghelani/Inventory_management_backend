@@ -43,6 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Verify token matches database
                 UserMaster user = userRepository.findById(userId)
                     .orElseThrow(() -> new ValidationException("User not found", HttpStatus.UNAUTHORIZED));
+                
+                // Check if user status is Active
+                if (!"A".equals(user.getStatus())) {
+                    throw new ValidationException("Account is inactive", HttpStatus.UNAUTHORIZED);
+                }
                     
                 if (!jwt.equals(user.getJwtToken())) {
                     throw new ValidationException("Invalid token", HttpStatus.UNAUTHORIZED);
