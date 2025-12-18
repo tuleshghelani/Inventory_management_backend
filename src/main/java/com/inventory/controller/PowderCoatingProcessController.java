@@ -42,7 +42,7 @@ public class PowderCoatingProcessController {
     @PostMapping("/return")
     public ResponseEntity<?> returnQuantity(@RequestBody PowderCoatingProcessDto request) {
         return ResponseEntity.ok(processService.returnQuantity(
-            request.getId(), 
+            request.getProcessItemId(), 
             request.getReturnQuantity(),
             request.getReturnDate()
         ));

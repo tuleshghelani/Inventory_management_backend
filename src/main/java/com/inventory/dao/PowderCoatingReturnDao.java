@@ -21,9 +21,10 @@ public class PowderCoatingReturnDao {
         countSql.append("""
             SELECT COUNT(r.id)
             FROM (SELECT * FROM powder_coating_return WHERE client_id = :clientId) r
-            LEFT JOIN (SELECT * FROM powder_coating_process WHERE client_id = :clientId) p ON r.process_id = p.id
-            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON p.customer_id = c.id
-            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
+            LEFT JOIN (SELECT * FROM powder_coating_process_items WHERE client_id = :clientId) pcpi ON r.powder_coating_process_item_id = pcpi.id
+            LEFT JOIN (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp ON pcpi.powder_coating_process_id = pcp.id
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON pcpi.product_id = pr.id
             WHERE 1=1
         """);
         params.put("clientId", dto.getClientId());
@@ -41,15 +42,18 @@ public class PowderCoatingReturnDao {
                 r.id,
                 r.return_quantity,
                 r.created_at,
-                p.id as process_id,
-                p.quantity as total_quantity,
-                p.remaining_quantity,
+                r.process_id,
+                pcpi.id as process_item_id,
+                pcpi.quantity as total_quantity,
+                pcpi.remaining_quantity,
+                pcp.id as process_id_from_item,
                 c.name as customer_name,
                 pr.name as product_name
             FROM (SELECT * FROM powder_coating_return WHERE client_id = :clientId) r
-            LEFT JOIN (SELECT * FROM powder_coating_process WHERE client_id = :clientId) p ON r.process_id = p.id
-            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON p.customer_id = c.id
-            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON p.product_id = pr.id
+            LEFT JOIN (SELECT * FROM powder_coating_process_items WHERE client_id = :clientId) pcpi ON r.powder_coating_process_item_id = pcpi.id
+            LEFT JOIN (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp ON pcpi.powder_coating_process_id = pcp.id
+            LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) pr ON pcpi.product_id = pr.id
             WHERE 1=1
         """);
 
@@ -65,8 +69,13 @@ public class PowderCoatingReturnDao {
     }
 
     private void appendSearchConditions(StringBuilder sql, Map<String, Object> params, PowderCoatingReturnDto dto) {
+        if (dto.getProcessItemId() != null) {
+            sql.append(" AND r.powder_coating_process_item_id = :processItemId");
+            params.put("processItemId", dto.getProcessItemId());
+        }
+        
         if (dto.getProcessId() != null) {
-            sql.append(" AND r.process_id = :processId");
+            sql.append(" AND pcp.id = :processId");
             params.put("processId", dto.getProcessId());
         }
 
@@ -94,10 +103,12 @@ public class PowderCoatingReturnDao {
             returnRecord.put("returnQuantity", row[1]);
             returnRecord.put("createdAt", row[2]);
             returnRecord.put("processId", row[3]);
-            returnRecord.put("totalQuantity", row[4]);
-            returnRecord.put("remainingQuantity", row[5]);
-            returnRecord.put("customerName", row[6]);
-            returnRecord.put("productName", row[7]);
+            returnRecord.put("processItemId", row[4]);
+            returnRecord.put("totalQuantity", row[5]);
+            returnRecord.put("remainingQuantity", row[6]);
+            returnRecord.put("processIdFromItem", row[7]);
+            returnRecord.put("customerName", row[8]);
+            returnRecord.put("productName", row[9]);
             returns.add(returnRecord);
         }
 

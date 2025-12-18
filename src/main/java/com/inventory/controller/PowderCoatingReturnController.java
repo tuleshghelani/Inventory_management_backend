@@ -32,4 +32,9 @@ public class PowderCoatingReturnController {
     public ResponseEntity<?> getByProcessId(@RequestBody PowderCoatingReturnDto request) {
         return ResponseEntity.ok(returnService.getByProcessId(request.getProcessId()));
     }
+    
+    @PostMapping("/getByProcessItemId")
+    public ResponseEntity<?> getByProcessItemId(@RequestBody PowderCoatingReturnDto request) {
+        return ResponseEntity.ok(returnService.getByProcessItemId(request.getProcessItemId()));
+    }
 } 

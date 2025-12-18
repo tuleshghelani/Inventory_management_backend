@@ -13,7 +13,8 @@ import java.time.OffsetDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PowderCoatingReturnDto {
     private Long id;
-    private Long processId;
+    private Long processItemId;
+    private Long processId; // For backward compatibility and filtering by process
     private Integer returnQuantity;
     private OffsetDateTime createdAt;
     private String processDetails;

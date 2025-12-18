@@ -8,8 +8,8 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @Getter
@@ -19,17 +19,13 @@ public class PowderCoatingProcessDto {
     private Long id;
     private Long customerId;
     private String customerName;
-    private Long productId;
-    private String productName;
-    private Integer quantity;
-    private Integer remainingQuantity;
-    private Integer totalBags;
-    private String remarks;
-    private BigDecimal unitPrice;
-    private BigDecimal totalAmount;
     private String status;
-    private Integer returnQuantity;
     private Long clientId;
+    private List<PowderCoatingProcessItemDto> items;
+    
+    // Fields for return operations (backward compatibility)
+    private Long processItemId;
+    private Integer returnQuantity;
 
     @JsonDeserialize(using = CustomDateDeserializer.class)
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss", timezone = "IST")

@@ -4,12 +4,13 @@ import com.inventory.dto.ApiResponse;
 import com.inventory.dto.PowderCoatingReturnDto;
 import com.inventory.dao.PowderCoatingReturnDao;
 import com.inventory.entity.PowderCoatingProcess;
+import com.inventory.entity.PowderCoatingProcessItem;
 import com.inventory.entity.PowderCoatingReturn;
 import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.PowderCoatingReturnRepository;
 import com.inventory.repository.PowderCoatingProcessRepository;
-import com.inventory.service.UtilityService;
+import com.inventory.repository.PowderCoatingProcessItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.Map;
@@ -24,6 +25,7 @@ public class PowderCoatingReturnService {
     private final PowderCoatingReturnDao returnDao;
     private final PowderCoatingReturnRepository returnRepository;
     private final PowderCoatingProcessRepository processRepository;
+    private final PowderCoatingProcessItemRepository processItemRepository;
     private final UtilityService utilityService;
 
     public ApiResponse<Map<String, Object>> searchReturns(PowderCoatingReturnDto dto) {
@@ -48,17 +50,30 @@ public class PowderCoatingReturnService {
             PowderCoatingReturn returnRecord = returnRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Return record not found"));
             UserMaster currentUser = utilityService.getCurrentLoggedInUser();
-            if(returnRecord.getClient().getId() != currentUser.getClient().getId()) {
+            if(!returnRecord.getClient().getId().equals(currentUser.getClient().getId())) {
                 throw new ValidationException("You are not authorized to delete this return record");
             }
             
-            // Restore the remaining quantity
-            PowderCoatingProcess process = returnRecord.getProcess();
-            process.setRemainingQuantity(process.getRemainingQuantity() + returnRecord.getReturnQuantity());
-            processRepository.save(process);
+            // Restore the remaining quantity to the specific item
+            PowderCoatingProcessItem processItem = returnRecord.getProcessItem();
+            processItem.setRemainingQuantity(processItem.getRemainingQuantity() + returnRecord.getReturnQuantity());
+            processItemRepository.save(processItem);
+            
+            // Update process status if needed
+            PowderCoatingProcess process = processItem.getPowderCoatingProcess();
+            List<PowderCoatingProcessItem> allItems = processItemRepository.findByPowderCoatingProcessId(process.getId());
+            boolean anyIncomplete = allItems.stream()
+                .anyMatch(item -> item.getRemainingQuantity() > 0);
+            
+            if (anyIncomplete && "C".equals(process.getStatus())) {
+                process.setStatus("A");
+                processRepository.save(process);
+            }
             
             returnRepository.delete(returnRecord);
             return ApiResponse.success("Return record deleted successfully");
+        } catch (ValidationException e) {
+            throw e;
         } catch (Exception e) {
             throw new ValidationException("Failed to delete return record: " + e.getMessage());
         }
@@ -72,30 +87,43 @@ public class PowderCoatingReturnService {
             PowderCoatingReturn returnRecord = returnRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Return record not found"));
             UserMaster currentUser = utilityService.getCurrentLoggedInUser();
-            if(returnRecord.getClient().getId() != currentUser.getClient().getId()) {
+            if(!returnRecord.getClient().getId().equals(currentUser.getClient().getId())) {
                 throw new ValidationException("You are not authorized to update this return record");
             }
 
-            PowderCoatingProcess process = returnRecord.getProcess();
+            PowderCoatingProcessItem processItem = returnRecord.getProcessItem();
 
-            process.setRemainingQuantity(process.getRemainingQuantity() + returnRecord.getReturnQuantity());
+            // Restore old quantity
+            processItem.setRemainingQuantity(processItem.getRemainingQuantity() + returnRecord.getReturnQuantity());
 
-            if (process.getRemainingQuantity() == 0) {
+            // Validate new quantity
+            if (processItem.getRemainingQuantity() < dto.getReturnQuantity()) {
+                throw new ValidationException("Return quantity cannot be greater than remaining quantity");
+            }
+            
+            // Apply new quantity
+            processItem.setRemainingQuantity(processItem.getRemainingQuantity() - dto.getReturnQuantity());
+            processItemRepository.save(processItem);
+            
+            // Update process status
+            PowderCoatingProcess process = processItem.getPowderCoatingProcess();
+            List<PowderCoatingProcessItem> allItems = processItemRepository.findByPowderCoatingProcessId(process.getId());
+            boolean allCompleted = allItems.stream()
+                .allMatch(item -> item.getRemainingQuantity() <= 0);
+            
+            if (allCompleted) {
                 process.setStatus("C");
             } else {
                 process.setStatus("A");
             }
-            if (process.getRemainingQuantity() < dto.getReturnQuantity()) {
-                throw new ValidationException("Return quantity cannot be greater than remaining quantity");
-            }
-            
-            process.setRemainingQuantity(process.getRemainingQuantity() - dto.getReturnQuantity());
             processRepository.save(process);
             
             returnRecord.setReturnQuantity(dto.getReturnQuantity());
             returnRepository.save(returnRecord);
             
             return ApiResponse.success("Return record updated successfully");
+        } catch (ValidationException e) {
+            throw e;
         } catch (Exception e) {
             throw new ValidationException("Failed to update return record: " + e.getMessage());
         }
@@ -133,8 +161,8 @@ public class PowderCoatingReturnService {
             PowderCoatingProcess process = processRepository.findById(processId)
                 .orElseThrow(() -> new ValidationException("Process not found"));
             UserMaster currentUser = utilityService.getCurrentLoggedInUser();
-            if(process.getClient().getId() != currentUser.getClient().getId()) {
-                throw new ValidationException("You are not authorized to delete this return record");
+            if(!process.getClient().getId().equals(currentUser.getClient().getId())) {
+                throw new ValidationException("You are not authorized to view this return record");
             }
 
             List<Map<String, Object>> returns = returnRepository.findByProcessId(processId)
@@ -144,6 +172,43 @@ public class PowderCoatingReturnService {
                     returnMap.put("id", returnRecord.getId());
                     returnMap.put("returnQuantity", returnRecord.getReturnQuantity());
                     returnMap.put("createdAt", returnRecord.getCreatedAt());
+                    returnMap.put("processId", returnRecord.getProcess() != null ? returnRecord.getProcess().getId() : null);
+                    returnMap.put("processItemId", returnRecord.getProcessItem().getId());
+                    returnMap.put("productName", returnRecord.getProcessItem().getProduct().getName());
+                    return returnMap;
+                })
+                .collect(Collectors.toList());
+
+            return ApiResponse.success("Return records retrieved successfully", returns);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ValidationException("Failed to retrieve return records: " + e.getMessage());
+        }
+    }
+    
+    public ApiResponse<?> getByProcessItemId(Long processItemId) {
+        try {
+            if (processItemId == null) {
+                throw new ValidationException("Process Item ID is required");
+            }
+            PowderCoatingProcessItem processItem = processItemRepository.findById(processItemId)
+                .orElseThrow(() -> new ValidationException("Process item not found"));
+            UserMaster currentUser = utilityService.getCurrentLoggedInUser();
+            if(!processItem.getClient().getId().equals(currentUser.getClient().getId())) {
+                throw new ValidationException("You are not authorized to view this return record");
+            }
+
+            List<Map<String, Object>> returns = returnRepository.findByProcessItemId(processItemId)
+                .stream()
+                .map(returnRecord -> {
+                    Map<String, Object> returnMap = new HashMap<>();
+                    returnMap.put("id", returnRecord.getId());
+                    returnMap.put("returnQuantity", returnRecord.getReturnQuantity());
+                    returnMap.put("createdAt", returnRecord.getCreatedAt());
+                    returnMap.put("processId", returnRecord.getProcess() != null ? returnRecord.getProcess().getId() : null);
+                    returnMap.put("processItemId", returnRecord.getProcessItem().getId());
+                    returnMap.put("productName", returnRecord.getProcessItem().getProduct().getName());
                     return returnMap;
                 })
                 .collect(Collectors.toList());

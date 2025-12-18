@@ -3,7 +3,6 @@ package com.inventory.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
@@ -14,7 +13,6 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Table(name = "powder_coating_process", indexes = {
     @Index(name = "idx_pcp_customer_id", columnList = "customer_id"),
-    @Index(name = "idx_pcp_product_id", columnList = "product_id"),
     @Index(name = "idx_pcp_created_at", columnList = "created_at"),
     @Index(name = "idx_pcp_client_id", columnList = "client_id")
 })
@@ -27,29 +25,6 @@ public class PowderCoatingProcess {
     @JoinColumn(name = "customer_id", referencedColumnName = "id", 
         foreignKey = @ForeignKey(name = "fk_pcp_customer_id_customer_id"))
     private Customer customer;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", referencedColumnName = "id", 
-        foreignKey = @ForeignKey(name = "fk_pcp_product_id_product_id"))
-    private Product product;
-    
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
-    
-    @Column(name = "remaining_quantity", nullable = false)
-    private Integer remainingQuantity;
-
-    @Column(name = "total_bags")
-    private Integer totalBags;
-
-    @Column(name = "remarks", columnDefinition = "varchar")
-    private String remarks;
-
-    @Column(name = "unit_price", precision = 10, scale = 2)
-    private BigDecimal unitPrice;
-
-    @Column(name = "total_amount", precision = 12, scale = 2)
-    private BigDecimal totalAmount;
     
     @Column(name = "created_at", length = 29, 
         columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP")

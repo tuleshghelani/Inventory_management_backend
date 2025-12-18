@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Table(name = "powder_coating_return", indexes = {
     @Index(name = "idx_pcr_process_id", columnList = "process_id"),
+    @Index(name = "idx_pcr_process_item_id", columnList = "powder_coating_process_item_id"),
     @Index(name = "idx_pcr_created_at", columnList = "created_at"),
     @Index(name = "idx_pcr_client_id", columnList = "client_id")
 })
@@ -25,6 +26,11 @@ public class PowderCoatingReturn {
     @JoinColumn(name = "process_id", referencedColumnName = "id",
         foreignKey = @ForeignKey(name = "fk_pcr_process_id"))
     private PowderCoatingProcess process;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "powder_coating_process_item_id", referencedColumnName = "id",
+        foreignKey = @ForeignKey(name = "fk_pcr_process_item_id"))
+    private PowderCoatingProcessItem processItem;
     
     @Column(name = "return_quantity", nullable = false)
     private Integer returnQuantity;

@@ -20,10 +20,9 @@ public class PowderCoatingProcessDao {
         Map<String, Object> params = new HashMap<>();
 
         countSql.append("""
-            SELECT COUNT(pcp.id)
+            SELECT COUNT(DISTINCT pcp.id)
             FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
             LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
-            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcp.product_id = p.id
             WHERE 1=1
         """);
         params.put("clientId", dto.getClientId());
@@ -41,21 +40,12 @@ public class PowderCoatingProcessDao {
         sql.append("""
             SELECT 
                 pcp.id,
-                pcp.quantity,
-                pcp.remaining_quantity,
-                pcp.total_bags,
-                pcp.remarks,
                 pcp.created_at,
                 pcp.status,
                 c.id as customer_id,
-                c.name as customer_name,
-                p.id as product_id,
-                p.name as product_name,
-                pcp.unit_price,
-                pcp.total_amount
+                c.name as customer_name
             FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
             LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON pcp.customer_id = c.id
-            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcp.product_id = p.id
             WHERE 1=1
         """);
 
@@ -77,21 +67,14 @@ public class PowderCoatingProcessDao {
         if (dto != null) {
             if (StringUtils.hasText(dto.getSearch())) {
                 sql.append("""
-                    AND (LOWER(c.name) LIKE LOWER(:search)
-                    OR LOWER(p.name) LIKE LOWER(:search))
+                    AND (LOWER(c.name) LIKE LOWER(:search))
                 """);
                 params.put("search", "%" + dto.getSearch().trim() + "%");
             }
 
             if (dto.getCustomerId() != null) {
-                
                 sql.append(" AND pcp.customer_id = :customerId");
                 params.put("customerId", dto.getCustomerId());
-            }
-
-            if (dto.getProductId() != null) {
-                sql.append(" AND pcp.product_id = :productId");
-                params.put("productId", dto.getProductId());
             }
 
             if (StringUtils.hasText(dto.getStatus())) {
@@ -111,20 +94,18 @@ public class PowderCoatingProcessDao {
         List<Map<String, Object>> processes = new ArrayList<>();
 
         for (Object[] row : results) {
+            Long processId = ((Number) row[0]).longValue();
             Map<String, Object> process = new HashMap<>();
-            process.put("id", row[0]);
-            process.put("quantity", row[1]);
-            process.put("remainingQuantity", row[2]);
-            process.put("totalBags", row[3]);
-            process.put("remarks", row[4]);
-            process.put("createdAt", row[5]);
-            process.put("status", row[6]);
-            process.put("customerId", row[7]);
-            process.put("customerName", row[8]);
-            process.put("productId", row[9]);
-            process.put("productName", row[10]);
-            process.put("unitPrice", row[11]);
-            process.put("totalAmount", row[12]);
+            process.put("id", processId);
+            process.put("createdAt", row[1]);
+            process.put("status", row[2]);
+            process.put("customerId", row[3]);
+            process.put("customerName", row[4]);
+            
+            // Fetch items for this process
+            List<Map<String, Object>> items = getItemsForProcess(processId, dto.getClientId());
+            process.put("items", items);
+            
             processes.add(process);
         }
 
@@ -135,26 +116,59 @@ public class PowderCoatingProcessDao {
 
         return response;
     }
+    
+    private List<Map<String, Object>> getItemsForProcess(Long processId, Long clientId) {
+        String sql = """
+            SELECT 
+                pcpi.id,
+                pcpi.quantity,
+                pcpi.remaining_quantity,
+                pcpi.total_bags,
+                pcpi.unit_price,
+                pcpi.total_amount,
+                pcpi.remarks,
+                p.id as product_id,
+                p.name as product_name
+            FROM (SELECT * FROM powder_coating_process_items WHERE client_id = :clientId) pcpi
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON pcpi.product_id = p.id
+            WHERE pcpi.powder_coating_process_id = :processId
+            ORDER BY pcpi.id
+        """;
+        
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("processId", processId);
+        query.setParameter("clientId", clientId);
+        
+        List<Object[]> itemResults = query.getResultList();
+        List<Map<String, Object>> items = new ArrayList<>();
+        
+        for (Object[] row : itemResults) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", row[0]);
+            item.put("quantity", row[1]);
+            item.put("remainingQuantity", row[2]);
+            item.put("totalBags", row[3]);
+            item.put("unitPrice", row[4]);
+            item.put("totalAmount", row[5]);
+            item.put("remarks", row[6]);
+            item.put("productId", row[7]);
+            item.put("productName", row[8]);
+            items.add(item);
+        }
+        
+        return items;
+    }
 
     public Map<String, Object> getProcess(Long id, Long clientId) {
         String query = """
             SELECT 
                 pcp.id,
-                pcp.quantity,
-                pcp.remaining_quantity,
-                pcp.total_bags,
-                pcp.remarks,
                 pcp.created_at,
                 pcp.status,
                 pcp.customer_id,
-                c.name as customer_name,
-                pcp.product_id,
-                p.name as product_name,
-                pcp.unit_price,
-                pcp.total_amount
+                c.name as customer_name
             FROM (SELECT * FROM powder_coating_process WHERE client_id = :clientId) pcp
             LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON c.id = pcp.customer_id
-            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON p.id = pcp.product_id
             WHERE pcp.id = :id
         """;
 
@@ -165,18 +179,14 @@ public class PowderCoatingProcessDao {
         
         Map<String, Object> process = new HashMap<>();
         process.put("id", result[0]);
-        process.put("quantity", result[1]);
-        process.put("remainingQuantity", result[2]);
-        process.put("totalBags", result[3]);
-        process.put("remarks", result[4]);
-        process.put("createdAt", result[5]);
-        process.put("status", result[6]);
-        process.put("customerId", result[7]);
-        process.put("customerName", result[8]);
-        process.put("productId", result[9]);
-        process.put("productName", result[10]);
-        process.put("unitPrice", result[11]);
-        process.put("totalAmount", result[12]);
+        process.put("createdAt", result[1]);
+        process.put("status", result[2]);
+        process.put("customerId", result[3]);
+        process.put("customerName", result[4]);
+        
+        // Fetch items for this process
+        List<Map<String, Object>> items = getItemsForProcess(id, clientId);
+        process.put("items", items);
         
         return process;
     }

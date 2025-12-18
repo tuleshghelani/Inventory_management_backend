@@ -3,10 +3,12 @@ package com.inventory.service;
 import com.inventory.dto.PowderCoatingProcessPdfDto;
 import com.inventory.entity.Customer;
 import com.inventory.entity.PowderCoatingProcess;
+import com.inventory.entity.PowderCoatingProcessItem;
 import com.inventory.entity.UserMaster;
 import com.inventory.exception.ValidationException;
 import com.inventory.repository.CustomerRepository;
 import com.inventory.repository.PowderCoatingProcessRepository;
+import com.inventory.repository.PowderCoatingProcessItemRepository;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
@@ -24,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RequiredArgsConstructor
 public class PdfGenerationService {
     private final PowderCoatingProcessRepository processRepository;
+    private final PowderCoatingProcessItemRepository processItemRepository;
     private final CustomerRepository customerRepository;
     private final UtilityService utilityService;
 
@@ -123,39 +126,45 @@ public class PdfGenerationService {
         AtomicInteger totalBagsSum = new AtomicInteger(0);
         
         processes.forEach(process -> {
-            PdfPCell noCell = new PdfPCell(new Phrase(String.valueOf(rowNum.getAndIncrement())));
-            noCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(noCell);
+            // Fetch items for this process
+            List<PowderCoatingProcessItem> items = processItemRepository.findByPowderCoatingProcessId(process.getId());
             
-            PdfPCell particularCell = new PdfPCell(new Phrase(process.getProduct() != null ? process.getProduct().getName() : "N/A"));
-            particularCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-            table.addCell(particularCell);
-            
-            int quantity = process.getQuantity() != null ? process.getQuantity() : 0;
-            int totalBags = process.getTotalBags() != null ? process.getTotalBags() : 0;
-            
-            totalQuantity.addAndGet(quantity);
-            totalBagsSum.addAndGet(totalBags);
-            
-            PdfPCell quantityCell = new PdfPCell(new Phrase(String.valueOf(quantity)));
-            quantityCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            table.addCell(quantityCell);
-            
-            PdfPCell bagsCell = new PdfPCell(new Phrase(String.valueOf(totalBags)));
-            bagsCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            table.addCell(bagsCell);
-            
-            PdfPCell priceCell = new PdfPCell(new Phrase(process.getUnitPrice() != null ? process.getUnitPrice().toString() : "0.00"));
-            priceCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            table.addCell(priceCell);
-            
-            PdfPCell amountCell = new PdfPCell(new Phrase(process.getTotalAmount() != null ? process.getTotalAmount().toString() : "0.00"));
-            amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-            table.addCell(amountCell);
-            
-            PdfPCell remarksCell = new PdfPCell(new Phrase(process.getRemarks() != null ? process.getRemarks() : ""));
-            remarksCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-            table.addCell(remarksCell);
+            // Iterate through all items of each process
+            items.forEach(item -> {
+                PdfPCell noCell = new PdfPCell(new Phrase(String.valueOf(rowNum.getAndIncrement())));
+                noCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                table.addCell(noCell);
+                
+                PdfPCell particularCell = new PdfPCell(new Phrase(item.getProduct() != null ? item.getProduct().getName() : "N/A"));
+                particularCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+                table.addCell(particularCell);
+                
+                int quantity = item.getQuantity() != null ? item.getQuantity() : 0;
+                int totalBags = item.getTotalBags() != null ? item.getTotalBags() : 0;
+                
+                totalQuantity.addAndGet(quantity);
+                totalBagsSum.addAndGet(totalBags);
+                
+                PdfPCell quantityCell = new PdfPCell(new Phrase(String.valueOf(quantity)));
+                quantityCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                table.addCell(quantityCell);
+                
+                PdfPCell bagsCell = new PdfPCell(new Phrase(String.valueOf(totalBags)));
+                bagsCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                table.addCell(bagsCell);
+                
+                PdfPCell priceCell = new PdfPCell(new Phrase(item.getUnitPrice() != null ? item.getUnitPrice().toString() : "0.00"));
+                priceCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                table.addCell(priceCell);
+                
+                PdfPCell amountCell = new PdfPCell(new Phrase(item.getTotalAmount() != null ? item.getTotalAmount().toString() : "0.00"));
+                amountCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+                table.addCell(amountCell);
+                
+                PdfPCell remarksCell = new PdfPCell(new Phrase(item.getRemarks() != null ? item.getRemarks() : ""));
+                remarksCell.setHorizontalAlignment(Element.ALIGN_LEFT);
+                table.addCell(remarksCell);
+            });
         });
         
         Font boldFont = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD);
@@ -184,7 +193,8 @@ public class PdfGenerationService {
         Font boldFont = new Font(Font.FontFamily.TIMES_ROMAN, 12, Font.BOLD);
         
         BigDecimal total = processes.stream()
-            .map(process -> process.getTotalAmount() != null ? process.getTotalAmount() : BigDecimal.ZERO)
+            .flatMap(process -> processItemRepository.findByPowderCoatingProcessId(process.getId()).stream())
+            .map(item -> item.getTotalAmount() != null ? item.getTotalAmount() : BigDecimal.ZERO)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         document.add(Chunk.NEWLINE);
