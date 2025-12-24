@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface PowderCoatingProcessRepository extends JpaRepository<PowderCoatingProcess, Long> {
     List<PowderCoatingProcess> findByCustomerId(Long customerId);
-    List<PowderCoatingProcess> findByProductId(Long productId);
+//    List<PowderCoatingProcess> findByProductId(Long productId);
     @Query("SELECT p FROM PowderCoatingProcess p WHERE p.id IN :ids")
     List<PowderCoatingProcess> findAllById(@org.springframework.data.repository.query.Param("ids") List<Long> ids);
 } 
