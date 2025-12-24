@@ -117,7 +117,7 @@ public class TransportDao {
                 t.total_bags as totalBags,
                 c.id as customerId,
                 c.name as customerName
-            FROM (SELECT * FROM transport WHERE client_id = :clientId) t
+            FROM (SELECT * FROM transport WHERE client_id = :clientId AND id = :transportId) t
             LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON t.customer_id = c.id
             WHERE t.id = :transportId
         """;
@@ -296,7 +296,7 @@ public class TransportDao {
                 c.address as customerAddress,
                 c.mobile as customerMobile,
                 c.gst as customerGst
-            FROM (SELECT * FROM transport WHERE client_id = :clientId) t
+            FROM (SELECT * FROM transport WHERE client_id = :clientId AND id = :transportId) t
             LEFT JOIN (SELECT * FROM customer WHERE client_id = :clientId) c ON t.customer_id = c.id
             WHERE t.id = :transportId
         """;
@@ -332,15 +332,16 @@ public class TransportDao {
                 p.name as product_name,
                 ti.quantity,
                 ti.remarks
-            FROM transport_bag b
-            LEFT JOIN transport_items ti ON ti.transport_bag_id = b.id
-            LEFT JOIN product p ON ti.product_id = p.id
+            FROM (SELECT * FROM transport_bag WHERE client_id = :clientId AND transport_id = :transportId) b
+            LEFT JOIN (SELECT * FROM transport_items WHERE client_id = :clientId AND transport_id = :transportId) ti ON ti.transport_bag_id = b.id
+            LEFT JOIN (SELECT * FROM product WHERE client_id = :clientId) p ON ti.product_id = p.id
             WHERE b.transport_id = :transportId
             ORDER BY b.id, ti.id
         """;
         
         Query bagNativeQuery = entityManager.createNativeQuery(bagQuery);
         bagNativeQuery.setParameter("transportId", transportId);
+        bagNativeQuery.setParameter("clientId", clientId);
         
         List<Object[]> bagResults = bagNativeQuery.getResultList();
         Map<Long, Map<String, Object>> bagsMap = new HashMap<>();
