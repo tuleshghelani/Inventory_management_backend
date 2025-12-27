@@ -46,17 +46,35 @@ public class AuthService {
 
     public Map<String, String> login(LoginRequest request) throws ValidationException {
         try {
+            // Check if user exists and is locked logic BEFORE authentication
+            UserMaster user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new RuntimeException("Invalid username or password"));
+
+            if (user.getLockTime() != null) {
+                 if (user.getLockTime().isAfter(OffsetDateTime.now())) {
+                     throw new ValidationException("Account is locked. Please try again after 10 minutes", HttpStatus.FORBIDDEN);
+                 } else {
+                     // Unlock
+                     user.setLockTime(null);
+                     user.setFailLoginCount(0);
+                     userRepository.save(user);
+                 }
+            }
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
 
+            // Authentication successful - reset counters
+             if (user.getFailLoginCount() > 0 || user.getLockTime() != null) {
+                user.setFailLoginCount(0);
+                user.setLockTime(null);
+                // We'll save later along with tokens
+            }
+
             String token = tokenProvider.generateToken(authentication);
             String refreshToken = UUID.randomUUID().toString();
 
-            // Save tokens to database
-            UserMaster user = userRepository.findByEmail(request.getEmail())
-                    .orElseThrow(() -> new RuntimeException("Invalid username or password"));
-            
             user.setJwtToken(token);
             user.setRefreshToken(refreshToken);
             user.setRefreshTokenExpiry(OffsetDateTime.now().plusDays(7)); // 7 days expiry
@@ -71,8 +89,20 @@ public class AuthService {
             tokens.put("email", user.getEmail());
             
             return tokens;
+        } catch (org.springframework.security.authentication.BadCredentialsException e) {
+             // Handle failed login attempt
+             UserMaster user = userRepository.findByEmail(request.getEmail()).orElse(null);
+             if (user != null) {
+                 int newCount = user.getFailLoginCount() + 1;
+                 user.setFailLoginCount(newCount);
+                 if (newCount >= 3) {
+                     user.setLockTime(OffsetDateTime.now().plusMinutes(10));
+                 }
+                 userRepository.save(user);
+             }
+             throw new ValidationException("Invalid username or password", HttpStatus.UNPROCESSABLE_ENTITY);
         } catch (ValidationException ve) {
-            ve.printStackTrace();
+            // Rethrow validation exceptions (like Account Locked) as is
             throw ve;
         } catch (Exception e) {
             e.printStackTrace();

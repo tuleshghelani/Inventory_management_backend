@@ -29,6 +29,15 @@ public class Client {
     @Column(name = "email", length = 256)
     private String email;
     
+    @Column(name = "password", length = 256)
+    private String password;
+
+    @Column(name = "fail_password_count")
+    private Integer failPasswordCount = 0;
+
+    @Column(name = "lock_time")
+    private OffsetDateTime lockTime;
+    
     @Column(name = "status", nullable = false, length = 2)
     private String status = "A";
 
